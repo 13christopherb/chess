@@ -1,3 +1,4 @@
+
 /// Bits for each rank
 pub const RANK_1: u64 = 0x0000_0000_0000_00FF;
 pub const RANK_2: u64 = 0x0000_0000_0000_FF00;
@@ -26,7 +27,6 @@ impl BitBoard {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use crate::bitboard::BitBoard;
@@ -40,6 +40,4 @@ mod test {
                    "New matrix did not contain correct data"
         );
     }
-
-
 }
