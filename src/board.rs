@@ -1,8 +1,10 @@
+use crate::BitBoard;
+
 /// Code used for storing the general state of the board
 pub const BRD_SQ_NUM: usize = 120;
 
 enum Pieces { EMPTY, WP, WN, WB, WQ, WK, BP, BN, BB, BQ, BK }
-enum Files { FileA=0, FileB, FileC, FileD, FileE, FileF, FileG, FileH, FileNone }
+pub enum Files { FileA=0, FileB, FileC, FileD, FileE, FileF, FileG, FileH, FileNone }
 pub enum Ranks { Rank1=0, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, RankNone }
 
 enum Squares {
@@ -33,7 +35,7 @@ pub struct PastMove {
 
 pub struct Board {
         pieces: [u8; BRD_SQ_NUM],
-        pawns: [u64; 3],
+        pawns: [BitBoard; 3],
         king_sq: [u8; 2],
         fifty_move: u64,
         side: u8,
@@ -53,26 +55,30 @@ pub struct Board {
 
         history: Vec<PastMove>,
 
-        pub sq120_to_sq64: [u8; 120], // Array to convert 10x12 square numbers to 8x8 square numbers
-        pub sq64_to_sq120: [u8; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
+        pub sq120_to_sq64: [u64; 120], // Array to convert 10x12 square numbers to 8x8 square numbers
+        pub sq64_to_sq120: [u64; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
+
+        piece_list: [[u8; 13]; 10],
+
+
 }
 
 impl Board {
     pub fn new() -> Board {
-            let mut sq120_to_sq64:[u8; 120] = [65;120];
-            let mut sq64_to_sq120:[u8; 64] = [120; 64];
+            let mut sq120_to_sq64:[u64; 120] = [65;120];
+            let mut sq64_to_sq120:[u64; 64] = [120; 64];
             let mut sq64:usize = 0;
             for rank in Ranks::Rank1 as u64 .. Ranks::RankNone as u64 {
                     for file in Files::FileA as u64 .. Files::FileNone as u64 {
                             let sq:u64 = fr2sq(file, rank);
-                            sq64_to_sq120[sq64] = sq as u8;
-                            sq120_to_sq64[sq as usize] = sq64 as u8;
+                            sq64_to_sq120[sq64] = sq as u64;
+                            sq120_to_sq64[sq as usize] = sq64 as u64;
                             sq64 += 1;
                     }
             }
             Board {
                     pieces: [0; 120],
-                    pawns: [0; 3],
+                    pawns: [BitBoard(0); 3],
                     king_sq: [0; 2],
                     fifty_move: 0,
                     side: 0,
@@ -87,7 +93,8 @@ impl Board {
                     num_minor_pieces: [0; 3],
                     history: vec![],
                     sq120_to_sq64,
-                    sq64_to_sq120
+                    sq64_to_sq120,
+                    piece_list: [[0; 13]; 10]
             }
     }
 }
