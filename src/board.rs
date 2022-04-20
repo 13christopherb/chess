@@ -78,7 +78,7 @@ impl Board {
             }
             Board {
                     pieces: [0; 120],
-                    pawns: [BitBoard(0); 3],
+                    pawns: [BitBoard::new(0); 3],
                     king_sq: [0; 2],
                     fifty_move: 0,
                     side: 0,
