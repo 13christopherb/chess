@@ -7,7 +7,7 @@ use crate::board::Ranks;
 use crate::board::Files;
 use crate::board::fr2sq;
 
-mod bitboard {
+pub mod bitboard {
     use crate::bit_operations::bitscan_forward;
     use crate::Board;
     use crate::board::{Files, fr2sq, Ranks};

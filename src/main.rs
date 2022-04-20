@@ -3,7 +3,7 @@ mod bit_operations;
 mod board;
 mod constants;
 
-use crate::bitboard::BitBoard;
+use crate::bitboard::bitboard::BitBoard;
 use crate::board::Board;
 
 
