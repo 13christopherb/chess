@@ -15,34 +15,38 @@ pub mod bitboard {
     #[derive(Debug, Copy, Clone)]
     pub struct BitBoard {
         pub board: u64,
-        bit_mask: [u64; 64],
+        set_mask: [u64; 64],
+        clear_mask: [u64; 64],
     }
 
     impl BitBoard {
         pub fn new(board: u64) -> BitBoard {
 
-            //Bit mask is used to quickly change individual bits in bitboard
+            //Set and clear masks are used to quickly change individual bits in bitboard
             // with bitwise operations
-            let mut bit_mask = [0; 64];
+            let mut set_mask = [0; 64];
+            let mut clear_mask = [0; 64];
 
             for i in 0..64 {
-                bit_mask[i] |= 1 << i as u64;
+                set_mask[i] |= 1 << i as u64;
+                clear_mask[i] = !set_mask[i];
             }
 
             BitBoard {
                 board,
-                bit_mask,
+                set_mask,
+                clear_mask,
             }
         }
 
         #[inline(always)]
         pub fn set_bit(&mut self, sq: u64) {
-            self.board |= self.bit_mask[sq as usize]
+            self.board |= self.set_mask[sq as usize]
         }
 
         #[inline(always)]
         pub fn clear_bit(&mut self, sq: u64) {
-            self.board ^= self.bit_mask[sq as usize]
+            self.board &= self.clear_mask[sq as usize]
         }
 
         #[inline(always)]
@@ -83,37 +87,49 @@ pub mod bitboard {
         }
     }
 }
+
 #[cfg(test)]
 mod test {
     use crate::bitboard::bitboard::BitBoard;
 
     #[test]
     fn test_set_bit() {
-        let initial_bits:u64 =  0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000000;
-        let expected_board:u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000100;
-        let mut board:BitBoard = BitBoard::new(initial_bits);
+        let initial_bits: u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000000;
+        let expected_board: u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000100;
+        let mut board: BitBoard = BitBoard::new(initial_bits);
         board.set_bit(2);
-        assert_eq!(board.board,
+        assert_eq!(board.clone().board,
                    expected_board,
                    "Does not correctly set a bit"
         );
-    }
-
-    fn test_clear_bit() {
-        let initial_bits:u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000100;
-        let expected_board:u64 =  0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000000;
-        let mut board:BitBoard = BitBoard::new(initial_bits);
-        board.clear_bit(2);
+        board.set_bit(2);
         assert_eq!(board.board,
                    expected_board,
+                   "Does not correctly leave a set bit set"
+        );
+    }
+
+    #[test]
+    fn test_clear_bit() {
+        let initial_bits: u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000100;
+        let expected_board: u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000000;
+        let mut board: BitBoard = BitBoard::new(initial_bits);
+        board.clear_bit(2);
+        assert_eq!(board.clone().board,
+                   expected_board,
                    "Does not correctly clear a bit"
+        );
+        board.clear_bit(2);
+        assert_eq!(board.clone().board,
+                   expected_board,
+                   "Does not correctly leave a clear bit cleared"
         );
     }
 
     #[test]
     fn test_piece_is_present() {
-        let initial_bits:u64 =  0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
-        let board:BitBoard = BitBoard::new(initial_bits);
+        let initial_bits: u64 = 0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
+        let board: BitBoard = BitBoard::new(initial_bits);
         assert_eq!(board.clone().piece_is_present(0),
                    true,
                    "Does not correctly find piece in occupied square"
@@ -126,8 +142,8 @@ mod test {
 
     #[test]
     fn test_count_bits() {
-        let initial_bits:u64 =  0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
-        let mut board:BitBoard = BitBoard::new(initial_bits);
+        let initial_bits: u64 = 0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
+        let mut board: BitBoard = BitBoard::new(initial_bits);
         assert_eq!(board.count_bits(),
                    8,
                    "New matrix did not contain correct data"
@@ -136,8 +152,8 @@ mod test {
 
     #[test]
     fn test_pop_bit() {
-        let initial_bits:u64 =  0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
-        let mut board:BitBoard = BitBoard::new(initial_bits);
+        let initial_bits: u64 = 0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
+        let mut board: BitBoard = BitBoard::new(initial_bits);
         let index = board.pop_bit();
         assert_eq!(board.count_bits(),
                    7,
