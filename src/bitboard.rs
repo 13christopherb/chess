@@ -15,35 +15,34 @@ pub mod bitboard {
     #[derive(Debug, Copy, Clone)]
     pub struct BitBoard {
         pub board: u64,
-        set_mask: [u64; 64],
-        clear_mask: [u64; 64]
+        bit_mask: [u64; 64],
     }
 
     impl BitBoard {
         pub fn new(board: u64) -> BitBoard {
-            let mut set_mask = [0; 64];
-            let mut clear_mask = [0; 64];
+
+            //Bit mask is used to quickly change individual bits in bitboard
+            // with bitwise operations
+            let mut bit_mask = [0; 64];
 
             for i in 0..64 {
-                set_mask[i] |= 1 << i as u64;
-                clear_mask[i] = !set_mask[i];
+                bit_mask[i] |= 1 << i as u64;
             }
 
             BitBoard {
                 board,
-                set_mask,
-                clear_mask
+                bit_mask,
             }
         }
 
         #[inline(always)]
         pub fn set_bit(&mut self, sq: u64) {
-            self.board |= self.set_mask[sq as usize]
+            self.board |= self.bit_mask[sq as usize]
         }
 
         #[inline(always)]
         pub fn clear_bit(&mut self, sq: u64) {
-            self.board &= self.clear_mask[sq as usize]
+            self.board ^= self.bit_mask[sq as usize]
         }
 
         #[inline(always)]
