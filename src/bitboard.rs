@@ -121,7 +121,7 @@ mod test {
         );
         assert_eq!(board.piece_is_present(2),
                    false,
-                   "Incorrectly finds piece in empty square"
+                   "Incorrectly finds piece in empty square."
         );
     }
 
