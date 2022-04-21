@@ -1,13 +1,17 @@
 use crate::BitBoard;
 
 /// Code used for storing the general state of the board
-pub const BRD_SQ_NUM: usize = 120;
 
-enum Pieces { EMPTY, WP, WN, WB, WQ, WK, BP, BN, BB, BQ, BK }
+#[repr(u8)]
+pub enum Pieces { EMPTY=0, WP, WN, WB, WQ, WK, BP, BN, BB, BQ, BK }
+
+#[repr(u8)]
 pub enum Files { FileA=0, FileB, FileC, FileD, FileE, FileF, FileG, FileH, FileNone }
+
+#[repr(u8)]
 pub enum Ranks { Rank1=0, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, RankNone }
 
-enum Squares {
+pub enum Squares {
         A1 = 21, B1, C1, D1, E1, F1, G1, H1,
         A2 = 31, B2, C2, D2, E2, F2, G2, H2,
         A3 = 41, B3, C3, D3, E3, F3, G3, H3,
@@ -34,7 +38,7 @@ pub struct PastMove {
 }
 
 pub struct Board {
-        pieces: [u8; BRD_SQ_NUM],
+        pieces: [u8; 120],
         pawns: [BitBoard; 3],
         king_sq: [u8; 2],
         fifty_move: u64,
@@ -46,7 +50,7 @@ pub struct Board {
 
         castle_perm: u8, //Castle permission
 
-        pos_key: u64,
+        hash_key: u64,
 
         num_pieces: [u8; 13],
         num_big_pieces: [u8; 3],
@@ -86,7 +90,7 @@ impl Board {
                     ply: 0,
                     history_ply: 0,
                     castle_perm: 0,
-                    pos_key: 0,
+                    hash_key: 0,
                     num_pieces: [0; 13],
                     num_big_pieces: [0; 3],
                     num_major_pieces: [0; 3],

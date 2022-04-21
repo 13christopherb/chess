@@ -2,6 +2,7 @@ mod bitboard;
 mod bit_operations;
 mod board;
 mod constants;
+mod hashkeys;
 
 use crate::bitboard::bitboard::BitBoard;
 use crate::board::Board;
