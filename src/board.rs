@@ -62,7 +62,7 @@ pub struct Board {
         pub sq120_to_sq64: [u64; 120], // Array to convert 10x12 square numbers to 8x8 square numbers
         pub sq64_to_sq120: [u64; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
 
-        piece_list: [[u8; 13]; 10],
+        piece_list: [[u8; 18]; 13],
 
 
 }
@@ -98,7 +98,7 @@ impl Board {
                     history: vec![],
                     sq120_to_sq64,
                     sq64_to_sq120,
-                    piece_list: [[0; 13]; 10]
+                    piece_list: [[0; 18]; 13]
             }
     }
 }
