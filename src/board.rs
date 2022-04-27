@@ -1,9 +1,10 @@
 use crate::BitBoard;
+use crate::hashkeys::hash_keys::BoardHasher;
 
 /// Code used for storing the general state of the board
 
 #[repr(u8)]
-pub enum Pieces { EMPTY=0, WP, WN, WB, WQ, WK, BP, BN, BB, BQ, BK }
+pub enum Pieces { EMPTY=0, WP, WR, WN, WB, WQ, WK, BP, BR, BN, BB, BQ, BK }
 
 #[repr(u8)]
 pub enum Files { FileA=0, FileB, FileC, FileD, FileE, FileF, FileG, FileH, FileNone }
@@ -21,120 +22,272 @@ pub enum Squares {
         A7 = 81, B7, C7, D7, E7, F7, G7, H7,
         A8 = 91, B8, C8, D8, E8, F8, G8, H8, NoSq
 }
+enum Castling { WKingCastle = 1, WQueenCastle = 2, BKingCastle = 3, BQueenCastle = 4 }
 
-enum Castling { WKingCastle = 1, WQueenCastle = 2, BKingCastle = 3, BQueenCastle = 4}
-
-pub fn fr2sq(file:u64, rank:u64) -> u64 {
-        (21 + file) + (rank * 10)
+pub fn fr2sq(file: u64, rank: u64) -> u64 {
+    (21 + file) + (rank * 10)
 }
 
 pub struct PastMove {
-        moved: u64,
-        en_passant: u64,
-        castle_perm: u8, //Castle permission
-        fifty_move: u64,
-        pos_key: u64,
+    moved: u64,
+    en_passant: u64,
+    castle_perm: u8,
+    //Castle permission
+    fifty_move: u64,
+    pos_key: u64,
 
 }
 
 pub struct Board {
-        pieces: [u8; 120],
-        pawns: [BitBoard; 3],
-        king_sq: [u8; 2],
-        fifty_move: u64,
-        side: u8,
-        en_passant: u64,
+    pieces: [u8; 120],
+    pawns: [BitBoard; 3],
+    king_sq: [u8; 2],
+    fifty_move: u64,
+    side: u8,
+    en_passant: u64,
 
-        ply: u64,
-        history_ply: u64,
+    ply: u64,
+    history_ply: u64,
 
-        castle_perm: u8, //Castle permission
+    castle_perm: u8, //Castle permission
 
-        hash_key: u64,
+    hash_key: u64,
 
-        num_pieces: [u8; 13],
-        num_big_pieces: [u8; 3],
-        num_major_pieces: [u8; 3],
-        num_minor_pieces: [u8; 3],
+    num_pieces: [u8; 13],
+    num_big_pieces: [u8; 3],
+    num_major_pieces: [u8; 3],
+    num_minor_pieces: [u8; 3],
 
-        history: Vec<PastMove>,
+    history: Vec<PastMove>,
 
-        pub sq120_to_sq64: [u64; 120], // Array to convert 10x12 square numbers to 8x8 square numbers
-        pub sq64_to_sq120: [u64; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
+    pub sq120_to_sq64: [u64; 120],
+    // Array to convert 10x12 square numbers to 8x8 square numbers
+    pub sq64_to_sq120: [u64; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
 
-        piece_list: [[u8; 18]; 13],
+    piece_list: [[u8; 18]; 13],
 
+    hasher: BoardHasher,
 
 }
 
 impl Board {
     pub fn new() -> Board {
-            let mut sq120_to_sq64:[u64; 120] = [65;120];
-            let mut sq64_to_sq120:[u64; 64] = [120; 64];
-            let mut sq64:usize = 0;
-            for rank in Ranks::Rank1 as u64 .. Ranks::RankNone as u64 {
-                    for file in Files::FileA as u64 .. Files::FileNone as u64 {
-                            let sq:u64 = fr2sq(file, rank);
-                            sq64_to_sq120[sq64] = sq as u64;
-                            sq120_to_sq64[sq as usize] = sq64 as u64;
-                            sq64 += 1;
-                    }
+        let mut sq120_to_sq64: [u64; 120] = [65; 120];
+        let mut sq64_to_sq120: [u64; 64] = [120; 64];
+        let mut sq64: usize = 0;
+        for rank in Ranks::Rank1 as u64..Ranks::RankNone as u64 {
+            for file in Files::FileA as u64..Files::FileNone as u64 {
+                let sq: u64 = fr2sq(file, rank);
+                sq64_to_sq120[sq64] = sq as u64;
+                sq120_to_sq64[sq as usize] = sq64 as u64;
+                sq64 += 1;
             }
-            Board {
-                    pieces: [0; 120],
-                    pawns: [BitBoard::new(0); 3],
-                    king_sq: [0; 2],
-                    fifty_move: 0,
-                    side: 0,
-                    en_passant: 0,
-                    ply: 0,
-                    history_ply: 0,
-                    castle_perm: 0,
-                    hash_key: 0,
-                    num_pieces: [0; 13],
-                    num_big_pieces: [0; 3],
-                    num_major_pieces: [0; 3],
-                    num_minor_pieces: [0; 3],
-                    history: vec![],
-                    sq120_to_sq64,
-                    sq64_to_sq120,
-                    piece_list: [[0; 18]; 13]
+        }
+        Board {
+            pieces: [0; 120],
+            pawns: [BitBoard::new(0); 3],
+            king_sq: [0; 2],
+            fifty_move: 0,
+            side: 0,
+            en_passant: 0,
+            ply: 0,
+            history_ply: 0,
+            castle_perm: 0,
+            hash_key: 0,
+            num_pieces: [0; 13],
+            num_big_pieces: [0; 3],
+            num_major_pieces: [0; 3],
+            num_minor_pieces: [0; 3],
+            history: vec![],
+            sq120_to_sq64,
+            sq64_to_sq120,
+            piece_list: [[0; 18]; 13],
+            hasher: BoardHasher::new(),
+        }
+    }
+
+    /// Resets the position to an empty board
+    pub fn reset_position(&mut self) {
+        for i in 0..120 {
+            self.pieces[i] = Squares::NoSq as u8;
+        }
+        for i in 0..64 {
+            self.pieces[usize::try_from(self.sq64_to_sq120[i]).unwrap()] = Pieces::EMPTY as u8;
+        }
+
+        for i in 0..3 {
+            self.num_big_pieces[i] = 0;
+            self.num_major_pieces[i] = 0;
+            self.num_minor_pieces[i] = 0;
+            self.pawns[i] = BitBoard::new(0);
+        }
+
+        for i in 0..13 {
+            self.num_pieces[i] = 0;
+        }
+
+        self.king_sq[0] = 0;
+        self.king_sq[1] = 0;
+
+        self.side = 2;
+        self.en_passant = Squares::NoSq as u64;
+        self.fifty_move = 0;
+
+        self.ply = 0;
+        self.history_ply = 0;
+
+        self.castle_perm = 0;
+
+        self.hash_key = 0;
+    }
+
+    /// Parses a string containing a Forsyth–Edwards Notation position and sets
+    /// the board's state to match the string.
+    /// # Panic
+    /// Should panic if the string is not a valid FEN
+    pub unsafe fn parse_fen(&mut self, fen: &str) {
+        let mut rank: i32 = Ranks::Rank8 as i32;
+        let mut file: i32 = Files::FileA as i32;
+
+        let mut piece = 0;
+        let mut count = 0;
+        let mut sq64 = 0;
+        let mut sq120 = 0;
+
+        self.reset_position();
+
+        let mut c = fen.as_ptr();
+
+        while rank >= 0 && *c != 0 {
+            count = 1;
+            match *c as char {
+                'p' => piece = Pieces::BP as u8,
+                'r' => piece = Pieces::BR as u8,
+                'n' => piece = Pieces::BN as u8,
+                'b' => piece = Pieces::BB as u8,
+                'k' => piece = Pieces::BK as u8,
+                'q' => piece = Pieces::BQ as u8,
+                'P' => piece = Pieces::WP as u8,
+                'R' => piece = Pieces::WR as u8,
+                'N' => piece = Pieces::WN as u8,
+                'B' => piece = Pieces::WB as u8,
+                'K' => piece = Pieces::WK as u8,
+                'Q' => piece = Pieces::WQ as u8,
+                '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
+                    piece = Pieces::EMPTY as u8;
+                    count = (*c as char).to_digit(10).unwrap();
+                }
+                '/' | ' ' => {
+                    rank -= 1;
+                    file = Files::FileA as i32;
+                    c = c.add(1);
+                    continue;
+                }
+                _ => piece = 0,
             }
+
+            // Set the square for the piece that was found or skip forward to the position
+            // of the next piece
+            for _ in 0..count {
+                sq64 = rank * 8 + file;
+                sq120 = self.sq64_to_sq120[sq64 as usize];
+                if piece != Pieces::EMPTY as u8 {
+                    self.pieces[sq120 as usize] = piece;
+                }
+                file += 1;
+            }
+            c = c.add(1);
+        } // end of while
+
+        assert!(*c as char == 'w' || *c as char == 'b');
+
+        self.side = if *c as char == 'w' { 0 } else { 1 };
+        c = c.add(2);
+
+        // Castle permission
+        for _ in 0..4 {
+            if *c as char == ' ' { break; }
+
+            match (*c as char) {
+                'K' => self.castle_perm |= Castling::WKingCastle as u8,
+                'Q' => self.castle_perm |= Castling::WQueenCastle as u8,
+                'k' => self.castle_perm |= Castling::BKingCastle as u8,
+                'q' => self.castle_perm |= Castling::BQueenCastle as u8,
+                _ => break,
+            }
+            c = c.add(1);
+        }
+        c = c.add(1);
+
+        // En passant
+        if *c as char != '-' {
+            match (*c as char) {
+                'a' => file = 0,
+                'b' => file = 1,
+                'c' => file = 2,
+                'd' => file = 3,
+                'e' => file = 4,
+                'f' => file = 5,
+                'g' => file = 6,
+                'h' => file = 7,
+                _ => file = -1
+            }
+            rank = (*c.add(1) as char).to_digit(10).unwrap() as i32;
+
+            self.en_passant = fr2sq(file as u64, rank as u64);
+        }
+        self.hash_key = self.hasher.generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
     }
 }
 
 #[cfg(test)]
 mod test {
-        use crate::board::fr2sq;
+    use crate::board::{fr2sq, Pieces, Squares};
 
-        #[test]
-        fn test_fr2sq() {
-                let square = fr2sq(3, 5);
-                assert_eq!(square,
-                           74,
-                           "Did not convert file and rank into correct square"
-                );
+    #[test]
+    fn test_fr2sq() {
+        let square = fr2sq(3, 5);
+        assert_eq!(square,
+                   74,
+                   "Did not convert file and rank into correct square"
+        );
+    }
+
+    use crate::board::Board;
+
+    #[test]
+    fn test_new_board() {
+        let board = Board::new();
+        assert_eq!(board.sq120_to_sq64[32], 9, "Did not correctly identify 64 square board numbers");
+        assert_eq!(board.sq120_to_sq64[0], 65, "Off board values have incorrect values");
+        let mut sum: i32 = 0;
+        for value in board.sq120_to_sq64 {
+            sum += value as i32;
         }
+        assert_eq!(sum, 5656, "Sum of sq120_to_s64 contents not correct");
 
-        use crate::board::Board;
-
-        #[test]
-        fn test_new_board() {
-                let board = Board::new();
-                assert_eq!(board.sq120_to_sq64[32], 9, "Did not correctly identify 64 square board numbers");
-                assert_eq!(board.sq120_to_sq64[0], 65, "Off board values have incorrect values");
-                let mut sum:i32 = 0;
-                for value in board.sq120_to_sq64 {
-                        sum += value as i32;
-                }
-                assert_eq!(sum, 5656, "Sum of sq120_to_s64 contents not correct");
-
-                assert_eq!(board.sq64_to_sq120[21], 46, "Did not correctly identify 120 square board numbers");
-                sum = 0;
-                for value in board.sq64_to_sq120 {
-                        sum += value as i32;
-                }
-                assert_eq!(sum, 3808, "Sum of sq64_to_s120 contents not correct");
+        assert_eq!(board.sq64_to_sq120[21], 46, "Did not correctly identify 120 square board numbers");
+        sum = 0;
+        for value in board.sq64_to_sq120 {
+            sum += value as i32;
         }
+        assert_eq!(sum, 3808, "Sum of sq64_to_s120 contents not correct");
+    }
+
+    #[test]
+    fn test_parse_fen() {
+        let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let white_pawn_bb: u64 = 0x0000_0000_0000_FF00;
+
+        let mut board = Board::new();
+        unsafe { board.parse_fen(start) };
+        assert_eq!(board.pieces[23], Pieces::WB as u8, "Did not correctly place white bishop on F1");
+        assert_eq!(board.pieces[87], Pieces::BP as u8, "Did not correctly place black pawn on C7");
+        assert_eq!(board.pieces[0], Squares::NoSq as u8, "Did not preserve offboard values");
+        assert_eq!(board.side, 0, "Did not correctly set it as white's move");
+        assert_eq!(board.castle_perm, 7, "Did not correctly set castling permission");
+        assert_eq!(board.en_passant, Squares::NoSq as u64, "Did not correctly set en passant square");
+        //assert_eq!(board.pawns[0].board, white_pawn_bb, "Did not correctly set position of white pawn bitboard");
+    }
 }
 

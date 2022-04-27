@@ -3,6 +3,7 @@ mod bit_operations;
 mod board;
 mod constants;
 mod hashkeys;
+mod utils;
 
 use crate::bitboard::bitboard::BitBoard;
 use crate::board::Board;
