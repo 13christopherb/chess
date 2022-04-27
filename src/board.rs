@@ -183,7 +183,7 @@ impl Board {
                     c = c.add(1);
                     continue;
                 }
-                _ => piece = 0,
+                _ => panic!("Inorrectly formatted string"),
             }
 
             // Set the square for the piece that was found or skip forward to the position
@@ -208,7 +208,7 @@ impl Board {
         for _ in 0..4 {
             if *c as char == ' ' { break; }
 
-            match (*c as char) {
+            match *c as char {
                 'K' => self.castle_perm |= Castling::WKingCastle as u8,
                 'Q' => self.castle_perm |= Castling::WQueenCastle as u8,
                 'k' => self.castle_perm |= Castling::BKingCastle as u8,
@@ -230,7 +230,7 @@ impl Board {
                 'f' => file = 5,
                 'g' => file = 6,
                 'h' => file = 7,
-                _ => file = -1
+                _ => panic!("Incorrectly formatted string")
             }
             rank = (*c.add(1) as char).to_digit(10).unwrap() as i32;
 
