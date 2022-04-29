@@ -141,7 +141,7 @@ mod test {
         let mut board: BitBoard = BitBoard::new(initial_bits);
         assert_eq!(board.count_bits(),
                    8,
-                   "New matrix did not contain correct data"
+                   "Did not count correct number of bits"
         );
     }
 
