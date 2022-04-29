@@ -1,16 +1,10 @@
-use crate::BitBoard;
+use crate::bitboard::bitboard::BitBoard;
+use crate::constants::{files, pieces, ranks};
 use crate::hashkeys::hash_keys::BoardHasher;
 
 /// Code used for storing the general state of the board
 
 #[repr(u8)]
-pub enum Pieces { EMPTY=0, WP, WR, WN, WB, WQ, WK, BP, BR, BN, BB, BQ, BK }
-
-#[repr(u8)]
-pub enum Files { FileA=0, FileB, FileC, FileD, FileE, FileF, FileG, FileH, FileNone }
-
-#[repr(u8)]
-pub enum Ranks { Rank1=0, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8, RankNone }
 
 pub enum Squares {
         A1 = 21, B1, C1, D1, E1, F1, G1, H1,
@@ -24,7 +18,7 @@ pub enum Squares {
 }
 enum Castling { WKingCastle = 1, WQueenCastle = 2, BKingCastle = 3, BQueenCastle = 4 }
 
-pub fn fr2sq(file: u64, rank: u64) -> u64 {
+pub fn fr2sq(file: u8, rank: u8) -> u8 {
     (21 + file) + (rank * 10)
 }
 
@@ -44,7 +38,7 @@ pub struct Board {
     king_sq: [u8; 2],
     fifty_move: u64,
     side: u8,
-    en_passant: u64,
+    en_passant: u8,
 
     ply: u64,
     history_ply: u64,
@@ -60,9 +54,9 @@ pub struct Board {
 
     history: Vec<PastMove>,
 
-    pub sq120_to_sq64: [u64; 120],
+    pub sq120_to_sq64: [u8; 120],
     // Array to convert 10x12 square numbers to 8x8 square numbers
-    pub sq64_to_sq120: [u64; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
+    pub sq64_to_sq120: [u8; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
 
     piece_list: [[u8; 18]; 13],
 
@@ -72,14 +66,14 @@ pub struct Board {
 
 impl Board {
     pub fn new() -> Board {
-        let mut sq120_to_sq64: [u64; 120] = [65; 120];
-        let mut sq64_to_sq120: [u64; 64] = [120; 64];
+        let mut sq120_to_sq64: [u8; 120] = [65; 120];
+        let mut sq64_to_sq120: [u8; 64] = [120; 64];
         let mut sq64: usize = 0;
-        for rank in Ranks::Rank1 as u64..Ranks::RankNone as u64 {
-            for file in Files::FileA as u64..Files::FileNone as u64 {
-                let sq: u64 = fr2sq(file, rank);
-                sq64_to_sq120[sq64] = sq as u64;
-                sq120_to_sq64[sq as usize] = sq64 as u64;
+        for rank in ranks::RANK_1..ranks::RANK_NONE {
+            for file in files::FILE_A..files::FILE_NONE {
+                let sq: u8 = fr2sq(file, rank);
+                sq64_to_sq120[sq64] = sq;
+                sq120_to_sq64[sq as usize] = sq64 as u8;
                 sq64 += 1;
             }
         }
@@ -112,7 +106,7 @@ impl Board {
             self.pieces[i] = Squares::NoSq as u8;
         }
         for i in 0..64 {
-            self.pieces[usize::try_from(self.sq64_to_sq120[i]).unwrap()] = Pieces::EMPTY as u8;
+            self.pieces[usize::try_from(self.sq64_to_sq120[i]).unwrap()] = pieces::EMPTY;
         }
 
         for i in 0..3 {
@@ -130,7 +124,7 @@ impl Board {
         self.king_sq[1] = 0;
 
         self.side = 2;
-        self.en_passant = Squares::NoSq as u64;
+        self.en_passant = Squares::NoSq as u8;
         self.fifty_move = 0;
 
         self.ply = 0;
@@ -146,8 +140,8 @@ impl Board {
     /// # Panic
     /// Should panic if the string is not a valid FEN
     pub unsafe fn parse_fen(&mut self, fen: &str) {
-        let mut rank: i32 = Ranks::Rank8 as i32;
-        let mut file: i32 = Files::FileA as i32;
+        let mut rank: i32 = ranks::RANK_8 as i32;
+        let mut file: i32 = files::FILE_A as i32;
 
         let mut piece = 0;
         let mut count = 0;
@@ -161,28 +155,28 @@ impl Board {
         while rank >= 0 && *c != 0 {
             count = 1;
             match *c as char {
-                'p' => piece = Pieces::BP as u8,
-                'r' => piece = Pieces::BR as u8,
-                'n' => piece = Pieces::BN as u8,
-                'b' => piece = Pieces::BB as u8,
-                'k' => piece = Pieces::BK as u8,
-                'q' => piece = Pieces::BQ as u8,
-                'P' => piece = Pieces::WP as u8,
-                'R' => piece = Pieces::WR as u8,
-                'N' => piece = Pieces::WN as u8,
-                'B' => piece = Pieces::WB as u8,
-                'K' => piece = Pieces::WK as u8,
-                'Q' => piece = Pieces::WQ as u8,
+                'p' => piece = pieces::BP,
+                'r' => piece = pieces::BR,
+                'n' => piece = pieces::BN,
+                'b' => piece = pieces::BB,
+                'k' => piece = pieces::BK,
+                'q' => piece = pieces::BQ,
+                'P' => piece = pieces::WP,
+                'R' => piece = pieces::WR,
+                'N' => piece = pieces::WN,
+                'B' => piece = pieces::WB,
+                'K' => piece = pieces::WK,
+                'Q' => piece = pieces::WQ,
                 '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
-                    piece = Pieces::EMPTY as u8;
+                    piece = pieces::EMPTY;
                     count = (*c as char).to_digit(10).unwrap();
-                }
+                },
                 '/' | ' ' => {
                     rank -= 1;
-                    file = Files::FileA as i32;
+                    file = files::FILE_A as i32;
                     c = c.add(1);
                     continue;
-                }
+                },
                 _ => panic!("Inorrectly formatted string"),
             }
 
@@ -191,7 +185,7 @@ impl Board {
             for _ in 0..count {
                 sq64 = rank * 8 + file;
                 sq120 = self.sq64_to_sq120[sq64 as usize];
-                if piece != Pieces::EMPTY as u8 {
+                if piece != pieces::EMPTY as u8 {
                     self.pieces[sq120 as usize] = piece;
                 }
                 file += 1;
@@ -221,7 +215,7 @@ impl Board {
 
         // En passant
         if *c as char != '-' {
-            match (*c as char) {
+            match *c as char {
                 'a' => file = 0,
                 'b' => file = 1,
                 'c' => file = 2,
@@ -234,15 +228,36 @@ impl Board {
             }
             rank = (*c.add(1) as char).to_digit(10).unwrap() as i32;
 
-            self.en_passant = fr2sq(file as u64, rank as u64);
+            self.en_passant = fr2sq(file as u8, rank as u8);
         }
         self.hash_key = self.hasher.generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
     }
 }
 
+/// Prints the board
+impl std::fmt::Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        const PIECE_CHARS:[&str; 13] = [" . "," P "," N "," B "," R "," Q "," K ",
+            " p "," n "," b "," r "," q "," k "];
+        const SIDE_CHARS:[char; 3] = ['w','b','-'];
+        const RANK_CHARS:[char; 8] = ['1','2','3','4','5','6','7','8'];
+        const FILE_CHARS:[char; 8] = ['a','b','c','d','e','f','g','h'];
+        let mut output = String::from("");
+        for rank in (ranks::RANK_1..=ranks::RANK_8).rev() {
+            for file in files::FILE_A..files::FILE_H + 1 {
+                let sq = fr2sq(file, rank);
+                let piece = self.pieces[sq as usize];
+                output.push_str(PIECE_CHARS[piece as usize]);
+            }
+            output.push_str("\n");
+        }
+        write!(f, "{}", output)
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::board::{fr2sq, Pieces, Squares};
+    use crate::board::{fr2sq, pieces, Squares};
 
     #[test]
     fn test_fr2sq() {
@@ -281,12 +296,12 @@ mod test {
 
         let mut board = Board::new();
         unsafe { board.parse_fen(start) };
-        assert_eq!(board.pieces[23], Pieces::WB as u8, "Did not correctly place white bishop on F1");
-        assert_eq!(board.pieces[87], Pieces::BP as u8, "Did not correctly place black pawn on C7");
+        assert_eq!(board.pieces[23], pieces::WB as u8, "Did not correctly place white bishop on F1");
+        assert_eq!(board.pieces[87], pieces::BP as u8, "Did not correctly place black pawn on C7");
         assert_eq!(board.pieces[0], Squares::NoSq as u8, "Did not preserve offboard values");
         assert_eq!(board.side, 0, "Did not correctly set it as white's move");
         assert_eq!(board.castle_perm, 7, "Did not correctly set castling permission");
-        assert_eq!(board.en_passant, Squares::NoSq as u64, "Did not correctly set en passant square");
+        assert_eq!(board.en_passant, Squares::NoSq as u8, "Did not correctly set en passant square");
         //assert_eq!(board.pawns[0].board, white_pawn_bb, "Did not correctly set position of white pawn bitboard");
     }
 }

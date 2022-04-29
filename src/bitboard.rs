@@ -1,16 +1,11 @@
 /// Module for bitboards which use a 64 bit unsigned integer where each bit represents the
 /// presence of a piece for one particular square.
 
-use crate::Board;
-use crate::bit_operations::bitscan_forward;
-use crate::board::Ranks;
-use crate::board::Files;
-use crate::board::fr2sq;
-
 pub mod bitboard {
     use crate::bit_operations::bitscan_forward;
     use crate::Board;
-    use crate::board::{Files, fr2sq, Ranks};
+    use crate::board::{fr2sq};
+    use crate::constants::{ranks, files};
 
     #[derive(Debug, Copy, Clone)]
     pub struct BitBoard {
@@ -65,7 +60,7 @@ pub mod bitboard {
 
         #[inline(always)]
         /// Checks if a piece is present at the given 64 square index
-        pub fn piece_is_present(self, sq64: u64) -> bool {
+        pub fn piece_is_present(self, sq64: u8) -> bool {
             (1 << sq64) & self.board > 0
         }
     }
@@ -76,9 +71,9 @@ pub mod bitboard {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
             let board = Board::new();
             let mut output = String::from("");
-            for rank in Ranks::Rank1 as u64..Ranks::RankNone as u64 {
-                for file in Files::FileA as u64..Files::FileNone as u64 {
-                    let sq: u64 = board.sq120_to_sq64[fr2sq(file, rank) as usize];
+            for rank in ranks::RANK_1..ranks::RANK_NONE {
+                for file in files::FILE_A..files::FILE_NONE {
+                    let sq: u8 = board.sq120_to_sq64[fr2sq(file, rank) as usize];
                     output.push_str(if self.piece_is_present(sq) { "x " } else { "- " });
                 }
                 output.push('\n');

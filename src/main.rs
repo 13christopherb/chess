@@ -5,14 +5,14 @@ mod constants;
 mod hashkeys;
 mod utils;
 
-use crate::bitboard::bitboard::BitBoard;
 use crate::board::Board;
 
 
 fn main() {
-    let initial_bits:u64 =  0b00100001_00000001_00000001_00010001_00000001_00000001_00000001_00000001;
-    let mut board:BitBoard = BitBoard::new(initial_bits);
-    print!("{}", board);
-    board.pop_bit();
+    let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let white_pawn_bb: u64 = 0x0000_0000_0000_FF00;
+
+    let mut board = Board::new();
+    unsafe { board.parse_fen(start) };
     print!("{}", board);
 }

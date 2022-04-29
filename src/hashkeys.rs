@@ -3,9 +3,9 @@
 pub mod hash_keys {
     use rand::Rng;
     use crate::Board;
-    use crate::board::Pieces;
+    use crate::constants::pieces;
     use crate::board::Squares;
-    use crate::board::Files;
+    use crate::constants::files;
 
 
     #[derive(Debug, Copy, Clone)]
@@ -39,13 +39,13 @@ pub mod hash_keys {
             }
         }
 
-        pub fn generate_key(self, pieces:[u8; 120], side:u8, en_passant:u64, castle_perm:u8) -> u64 {
+        pub fn generate_key(self, pieces:[u8; 120], side:u8, en_passant:u8, castle_perm:u8) -> u64 {
             let mut sq = 0;
             let mut final_key:u64 = 0;
 
             for piece in pieces {
-                if piece != Squares::NoSq as u8 && piece != Pieces::EMPTY as u8 {
-                    assert!(piece >= Pieces::WP as u8 && piece <= Pieces::BK as u8);
+                if piece != Squares::NoSq as u8 && piece != pieces::EMPTY {
+                    assert!(piece >= pieces::WP && piece <= pieces::BK);
                     final_key ^= self.piece_keys[piece as usize][sq];
                 }
             }
@@ -55,9 +55,9 @@ pub mod hash_keys {
                 final_key ^= self.side_key;
             }
 
-            if en_passant != Squares::NoSq as u64 {
+            if en_passant != Squares::NoSq as u8 {
                 assert!(en_passant < 120);
-                final_key ^= self.piece_keys[Pieces::EMPTY as usize][usize::try_from(en_passant).unwrap()];
+                final_key ^= self.piece_keys[pieces::EMPTY as usize][usize::try_from(en_passant).unwrap()];
             }
 
             assert!(castle_perm <= 15);

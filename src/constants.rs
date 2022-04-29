@@ -1,18 +1,39 @@
-/// Bits for each rank
-pub const RANK_1: u64 = 0x0000_0000_0000_00FF;
-pub const RANK_2: u64 = 0x0000_0000_0000_FF00;
-pub const RANK_3: u64 = 0x0000_0000_00FF_0000;
-pub const RANK_4: u64 = 0x0000_0000_FF00_0000;
-pub const RANK_5: u64 = 0x0000_00FF_0000_0000;
-pub const RANK_6: u64 = 0x0000_FF00_0000_0000;
-pub const RANK_7: u64 = 0x00FF_0000_0000_0000;
-pub const RANK_8: u64 = 0xFF00_0000_0000_0000;
+pub mod pieces {
+    pub const EMPTY:u8 = 0;
+    pub const WP:u8 = 1;
+    pub const WN:u8 = 2;
+    pub const WB:u8 = 3;
+    pub const WR:u8 = 4;
+    pub const WQ:u8 = 5;
+    pub const WK:u8 = 6;
+    pub const BP:u8 = 7;
+    pub const BN:u8 = 8;
+    pub const BB:u8 = 9;
+    pub const BR:u8 = 10;
+    pub const BQ:u8 = 11;
+    pub const BK:u8 = 12;
+}
 
-/// Bits for each file
-pub const FILE_A:u64 = 0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
-pub const FILE_B:u64 = 0b00000010_00000010_00000010_00000010_00000010_00000010_00000010_00000010;
-pub const FILE_C:u64 = 0b00000100_00000100_00000100_00000100_00000100_00000100_00000100_00000100;
-pub const FILE_D:u64 = 0b00001000_00001000_00001000_00001000_00001000_00001000_00001000_00001000;
-pub const FILE_E:u64 = 0b00010000_00010000_00010000_00010000_00010000_00010000_00010000_00010000;
-pub const FILE_F:u64 = 0b00100000_00100000_00100000_00100000_00100000_00100000_00100000_00100000;
-pub const FILE_G:u64 = 0b01000000_01000000_01000000_01000000_01000000_01000000_01000000_01000000;
+pub mod files {
+    pub const FILE_A:u8 = 0;
+    pub const FILE_B:u8 = 1;
+    pub const FILE_C:u8 = 2;
+    pub const FILE_D:u8 = 3;
+    pub const FILE_E:u8 = 4;
+    pub const FILE_F:u8 = 5;
+    pub const FILE_G:u8 = 6;
+    pub const FILE_H:u8 = 7;
+    pub const FILE_NONE:u8 = 8;
+}
+
+pub mod ranks {
+    pub const RANK_1:u8 = 0;
+    pub const RANK_2:u8 = 1;
+    pub const RANK_3:u8 = 2;
+    pub const RANK_4:u8 = 3;
+    pub const RANK_5:u8 = 4;
+    pub const RANK_6:u8 = 5;
+    pub const RANK_7:u8 = 6;
+    pub const RANK_8:u8 = 7;
+    pub const RANK_NONE:u8 = 8;
+}
