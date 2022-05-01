@@ -1,21 +1,9 @@
 use crate::bitboard::bitboard::BitBoard;
-use crate::constants::{files, pieces, ranks};
+use crate::constants::{files, piece_values, pieces, ranks, squares};
 use crate::hashkeys::hash_keys::BoardHasher;
 
 /// Code used for storing the general state of the board
 
-#[repr(u8)]
-
-pub enum Squares {
-        A1 = 21, B1, C1, D1, E1, F1, G1, H1,
-        A2 = 31, B2, C2, D2, E2, F2, G2, H2,
-        A3 = 41, B3, C3, D3, E3, F3, G3, H3,
-        A4 = 51, B4, C4, D4, E4, F4, G4, H4,
-        A5 = 61, B5, C5, D5, E5, F5, G5, H5,
-        A6 = 71, B6, C6, D6, E6, F6, G6, H6,
-        A7 = 81, B7, C7, D7, E7, F7, G7, H7,
-        A8 = 91, B8, C8, D8, E8, F8, G8, H8, NoSq
-}
 enum Castling { WKingCastle = 1, WQueenCastle = 2, BKingCastle = 3, BQueenCastle = 4 }
 
 pub fn fr2sq(file: u8, rank: u8) -> u8 {
@@ -48,9 +36,10 @@ pub struct Board {
     hash_key: u64,
 
     num_pieces: [u8; 13],
-    num_big_pieces: [u8; 3],
-    num_major_pieces: [u8; 3],
-    num_minor_pieces: [u8; 3],
+    num_big_pieces: [u8; 2],
+    num_major_pieces: [u8; 2],
+    num_minor_pieces: [u8; 2],
+    material: [u32; 2],
 
     history: Vec<PastMove>,
 
@@ -89,9 +78,10 @@ impl Board {
             castle_perm: 0,
             hash_key: 0,
             num_pieces: [0; 13],
-            num_big_pieces: [0; 3],
-            num_major_pieces: [0; 3],
-            num_minor_pieces: [0; 3],
+            num_big_pieces: [0; 2],
+            num_major_pieces: [0; 2],
+            num_minor_pieces: [0; 2],
+            material: [0; 2],
             history: vec![],
             sq120_to_sq64,
             sq64_to_sq120,
@@ -103,13 +93,13 @@ impl Board {
     /// Resets the position to an empty board
     pub fn reset_position(&mut self) {
         for i in 0..120 {
-            self.pieces[i] = Squares::NoSq as u8;
+            self.pieces[i] = squares::OFFBOARD;
         }
         for i in 0..64 {
             self.pieces[usize::try_from(self.sq64_to_sq120[i]).unwrap()] = pieces::EMPTY;
         }
 
-        for i in 0..3 {
+        for i in 0..2 {
             self.num_big_pieces[i] = 0;
             self.num_major_pieces[i] = 0;
             self.num_minor_pieces[i] = 0;
@@ -124,7 +114,7 @@ impl Board {
         self.king_sq[1] = 0;
 
         self.side = 2;
-        self.en_passant = Squares::NoSq as u8;
+        self.en_passant = squares::NO_SQ;
         self.fifty_move = 0;
 
         self.ply = 0;
@@ -133,6 +123,31 @@ impl Board {
         self.castle_perm = 0;
 
         self.hash_key = 0;
+    }
+
+    pub fn update_material_list(&mut self) {
+        let mut sq = 0;
+        for i in 0..120 {
+            sq = i as u8;
+            let mut piece = self.pieces[i];
+            let mut color: usize;
+            if piece != squares::OFFBOARD && piece != pieces::EMPTY {
+                color = piece_values::PIECE_COLOR[piece as usize] as usize;
+
+                if piece_values::BIG_PIECE[piece as usize] { self.num_big_pieces[color] += 1;}
+                if piece_values::MINOR_PIECE[piece as usize] { self.num_minor_pieces[color] += 1;}
+                if piece_values::MAJOR_PIECE[piece as usize] { self.num_major_pieces[color] += 1;}
+
+                self.material[color] += piece_values::VALUE[piece as usize];
+
+                self.piece_list[piece as usize][self.num_pieces[piece as usize] as usize] = sq;
+                self.num_pieces[piece as usize] += 1;
+
+                if piece == pieces::WK {self.king_sq[color] = sq;}
+                if piece == pieces::BK {self.king_sq[color] = sq;}
+
+            }
+        }
     }
 
     /// Parses a string containing a Forsyth–Edwards Notation position and sets
@@ -257,7 +272,7 @@ impl std::fmt::Display for Board {
 
 #[cfg(test)]
 mod test {
-    use crate::board::{fr2sq, pieces, Squares};
+    use crate::board::{fr2sq, pieces, squares};
 
     #[test]
     fn test_fr2sq() {
@@ -298,11 +313,30 @@ mod test {
         unsafe { board.parse_fen(start) };
         assert_eq!(board.pieces[23], pieces::WB as u8, "Did not correctly place white bishop on F1");
         assert_eq!(board.pieces[87], pieces::BP as u8, "Did not correctly place black pawn on C7");
-        assert_eq!(board.pieces[0], Squares::NoSq as u8, "Did not preserve offboard values");
+        assert_eq!(board.pieces[0], squares::OFFBOARD, "Did not preserve offboard values");
         assert_eq!(board.side, 0, "Did not correctly set it as white's move");
         assert_eq!(board.castle_perm, 7, "Did not correctly set castling permission");
-        assert_eq!(board.en_passant, Squares::NoSq as u8, "Did not correctly set en passant square");
+        assert_eq!(board.en_passant, squares::NO_SQ, "Did not correctly set en passant square");
         //assert_eq!(board.pawns[0].board, white_pawn_bb, "Did not correctly set position of white pawn bitboard");
+    }
+
+    #[test]
+    fn test_update_material_list() {
+        let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        let mut board = Board::new();
+        unsafe { board.parse_fen(start) };
+        board.update_material_list();
+        //King is counted as a major piece
+        assert_eq!(board.num_major_pieces[0], 4, "Did not update with correct number of white major pieces");
+        assert_eq!(board.num_major_pieces[1], 4, "Did not update with correct number of black major pieces");
+        assert_eq!(board.num_minor_pieces[0], 4, "Did not update with correct number of white minor pieces");
+        assert_eq!(board.num_minor_pieces[1], 4, "Did not update with correct number of black minor pieces");
+        assert_eq!(board.num_big_pieces[0], 8, "Did not update with correct number of white big pieces");
+        assert_eq!(board.num_big_pieces[1], 8, "Did not update with correct number of black big pieces");
+        assert_eq!(board.material[0], 54200, "Did not correctly set material value for white");
+        assert_eq!(board.material[1], 54200, "Did not correctly set material value for black");
+        assert_eq!(board.piece_list[1][4], 35, "Did not correctly set square for white pawn");
     }
 }
 

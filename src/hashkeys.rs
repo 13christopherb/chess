@@ -4,7 +4,7 @@ pub mod hash_keys {
     use rand::Rng;
     use crate::Board;
     use crate::constants::pieces;
-    use crate::board::Squares;
+    use crate::constants::squares;
     use crate::constants::files;
 
 
@@ -44,7 +44,7 @@ pub mod hash_keys {
             let mut final_key:u64 = 0;
 
             for piece in pieces {
-                if piece != Squares::NoSq as u8 && piece != pieces::EMPTY {
+                if piece != squares::OFFBOARD && piece != pieces::EMPTY {
                     assert!(piece >= pieces::WP && piece <= pieces::BK);
                     final_key ^= self.piece_keys[piece as usize][sq];
                 }
@@ -55,7 +55,7 @@ pub mod hash_keys {
                 final_key ^= self.side_key;
             }
 
-            if en_passant != Squares::NoSq as u8 {
+            if en_passant != squares::NO_SQ as u8 {
                 assert!(en_passant < 120);
                 final_key ^= self.piece_keys[pieces::EMPTY as usize][usize::try_from(en_passant).unwrap()];
             }
