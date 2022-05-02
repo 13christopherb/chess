@@ -66,8 +66,7 @@ impl Board {
             }
         }
 
-        let mut files_squares: [u8; 120] = Board::init_file_array();
-        let mut ranks_squares: [u8; 120] = Board::init_rank_array();
+        let (mut files_squares, mut ranks_squares) = Board::init_file_rank_arrays();
 
         Board {
             pieces: [0; 120],
@@ -95,36 +94,26 @@ impl Board {
         }
     }
 
-    fn init_file_array() -> [u8; 120] {
-        let mut files_squares: [u8; 120] = [0; 120];
+    /// Initializes arrays that have either the file or rank number for each square (or offboard
+    /// if the 120 board square is off the 8x8 board
+    fn init_file_rank_arrays() -> ([u8; 120], [u8; 120]) {
+        let mut files: [u8; 120] = [0; 120];
+        let mut ranks: [u8; 120] = [0; 120];
+
         for i in 0..120 {
-            files_squares[i] = squares::OFFBOARD;
+            files[i] = squares::OFFBOARD;
+            ranks[i] = squares::OFFBOARD;
         }
 
         for rank in ranks::RANK_1..=ranks::RANK_8 {
             for file in files::FILE_A..=files::FILE_H {
                 let sq = fr2sq(file, rank) as usize;
-                files_squares[sq] = file;
+                files[sq] = file;
+                ranks[sq] = rank;
             }
         }
 
-        files_squares
-    }
-
-    fn init_rank_array() -> [u8; 120] {
-        let mut ranks_squares: [u8; 120] = [0; 120];
-        for i in 0..120 {
-            ranks_squares[i] = squares::OFFBOARD;
-        }
-
-        for rank in ranks::RANK_1..=ranks::RANK_8 {
-            for file in files::FILE_A..=files::FILE_H {
-                let sq = fr2sq(file, rank) as usize;
-                ranks_squares[sq] = rank;
-            }
-        }
-
-        ranks_squares
+        (files, ranks)
     }
 
     /// Resets the position to an empty board
