@@ -1,3 +1,10 @@
+pub mod castling {
+    pub const WK_CASTLE:u8 = 1;
+    pub const WQ_CASTLE:u8 = 2;
+    pub const BK_CASTLE:u8 = 3;
+    pub const BQ_CASTLE:u8 = 4;
+}
+
 pub mod pieces {
     pub const EMPTY:u8 = 0;
     pub const WP:u8 = 1;

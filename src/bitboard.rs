@@ -4,8 +4,8 @@
 pub mod bitboard {
     use crate::bit_operations::bitscan_forward;
     use crate::Board;
-    use crate::board::{fr2sq};
     use crate::constants::{ranks, files};
+    use crate::utils::utils::fr2sq;
 
     #[derive(Debug, Copy, Clone)]
     pub struct BitBoard {

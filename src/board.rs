@@ -1,14 +1,9 @@
 use crate::bitboard::bitboard::BitBoard;
-use crate::constants::{files, piece_values, pieces, ranks, squares};
+use crate::constants::{castling, files, piece_values, pieces, ranks, squares};
 use crate::hashkeys::hash_keys::BoardHasher;
+use crate::utils::utils::fr2sq;
 
 /// Code used for storing the general state of the board
-
-enum Castling { WKingCastle = 1, WQueenCastle = 2, BKingCastle = 3, BQueenCastle = 4 }
-
-pub fn fr2sq(file: u8, rank: u8) -> u8 {
-    (21 + file) + (rank * 10)
-}
 
 pub struct PastMove {
     moved: u64,
@@ -47,6 +42,9 @@ pub struct Board {
     // Array to convert 10x12 square numbers to 8x8 square numbers
     pub sq64_to_sq120: [u8; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
 
+    pub files_squares: [u8; 120],
+    pub ranks_squares: [u8; 120],
+
     piece_list: [[u8; 18]; 13],
 
     hasher: BoardHasher,
@@ -57,6 +55,7 @@ impl Board {
     pub fn new() -> Board {
         let mut sq120_to_sq64: [u8; 120] = [65; 120];
         let mut sq64_to_sq120: [u8; 64] = [120; 64];
+
         let mut sq64: usize = 0;
         for rank in ranks::RANK_1..ranks::RANK_NONE {
             for file in files::FILE_A..files::FILE_NONE {
@@ -66,6 +65,10 @@ impl Board {
                 sq64 += 1;
             }
         }
+
+        let mut files_squares: [u8; 120] = Board::init_file_array();
+        let mut ranks_squares: [u8; 120] = Board::init_rank_array();
+
         Board {
             pieces: [0; 120],
             pawns: [BitBoard::new(0); 3],
@@ -85,9 +88,43 @@ impl Board {
             history: vec![],
             sq120_to_sq64,
             sq64_to_sq120,
+            files_squares,
+            ranks_squares,
             piece_list: [[0; 18]; 13],
             hasher: BoardHasher::new(),
         }
+    }
+
+    fn init_file_array() -> [u8; 120] {
+        let mut files_squares: [u8; 120] = [0; 120];
+        for i in 0..120 {
+            files_squares[i] = squares::OFFBOARD;
+        }
+
+        for rank in ranks::RANK_1..=ranks::RANK_8 {
+            for file in files::FILE_A..=files::FILE_H {
+                let sq = fr2sq(file, rank) as usize;
+                files_squares[sq] = file;
+            }
+        }
+
+        files_squares
+    }
+
+    fn init_rank_array() -> [u8; 120] {
+        let mut ranks_squares: [u8; 120] = [0; 120];
+        for i in 0..120 {
+            ranks_squares[i] = squares::OFFBOARD;
+        }
+
+        for rank in ranks::RANK_1..=ranks::RANK_8 {
+            for file in files::FILE_A..=files::FILE_H {
+                let sq = fr2sq(file, rank) as usize;
+                ranks_squares[sq] = rank;
+            }
+        }
+
+        ranks_squares
     }
 
     /// Resets the position to an empty board
@@ -158,10 +195,10 @@ impl Board {
         let mut rank: i32 = ranks::RANK_8 as i32;
         let mut file: i32 = files::FILE_A as i32;
 
-        let mut piece = 0;
-        let mut count = 0;
-        let mut sq64 = 0;
-        let mut sq120 = 0;
+        let mut piece: u8;
+        let mut count: u32;
+        let mut sq64: i32;
+        let mut sq120: u8;
 
         self.reset_position();
 
@@ -218,10 +255,10 @@ impl Board {
             if *c as char == ' ' { break; }
 
             match *c as char {
-                'K' => self.castle_perm |= Castling::WKingCastle as u8,
-                'Q' => self.castle_perm |= Castling::WQueenCastle as u8,
-                'k' => self.castle_perm |= Castling::BKingCastle as u8,
-                'q' => self.castle_perm |= Castling::BQueenCastle as u8,
+                'K' => self.castle_perm |= castling::WK_CASTLE,
+                'Q' => self.castle_perm |= castling::WQ_CASTLE,
+                'k' => self.castle_perm |= castling::BK_CASTLE,
+                'q' => self.castle_perm |= castling::BQ_CASTLE,
                 _ => break,
             }
             c = c.add(1);
@@ -272,7 +309,9 @@ impl std::fmt::Display for Board {
 
 #[cfg(test)]
 mod test {
-    use crate::board::{fr2sq, pieces, squares};
+    use crate::board::Board;
+    use crate::constants::{pieces, squares};
+    use crate::utils::utils::fr2sq;
 
     #[test]
     fn test_fr2sq() {
@@ -282,8 +321,6 @@ mod test {
                    "Did not convert file and rank into correct square"
         );
     }
-
-    use crate::board::Board;
 
     #[test]
     fn test_new_board() {
@@ -302,6 +339,10 @@ mod test {
             sum += value as i32;
         }
         assert_eq!(sum, 3808, "Sum of sq64_to_s120 contents not correct");
+
+        assert_eq!(board.files_squares[34], 3, "Did not initialize files array correctly");
+        assert_eq!(board.ranks_squares[32], 1, "Did not initialize ranks array correctly");
+
     }
 
     #[test]
