@@ -192,8 +192,10 @@ impl Board {
         self.reset_position();
 
         let mut c = fen.as_ptr();
+        let mut i: usize = 0;
+        let length = fen.chars().count();
 
-        while rank >= 0 && *c != 0 {
+        while rank >= 0 && i < length {
             count = 1;
             match *c as char {
                 'p' => piece = pieces::BP,
@@ -232,6 +234,7 @@ impl Board {
                 file += 1;
             }
             c = c.add(1);
+            i += 1;
         } // end of while
 
         assert!(*c as char == 'w' || *c as char == 'b');
@@ -267,10 +270,13 @@ impl Board {
                 'h' => file = 7,
                 _ => panic!("Incorrectly formatted string")
             }
-            rank = (*c.add(1) as char).to_digit(10).unwrap() as i32;
-
+            let rank_char: char = *c.add(1) as char;
+            rank = rank_char.to_digit(10).unwrap() as i32 - 1; // Rank in string 1 index, so subtract 1
             self.en_passant = fr2sq(file as u8, rank as u8);
         }
+
+        //self.ply =
+
         self.hash_key = self.hasher.generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
     }
 }
@@ -336,17 +342,18 @@ mod test {
 
     #[test]
     fn test_parse_fen() {
-        let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        let start: &str = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq e3 1 2";
         let white_pawn_bb: u64 = 0x0000_0000_0000_FF00;
 
         let mut board = Board::new();
         unsafe { board.parse_fen(start) };
         assert_eq!(board.pieces[23], pieces::WB as u8, "Did not correctly place white bishop on F1");
-        assert_eq!(board.pieces[87], pieces::BP as u8, "Did not correctly place black pawn on C7");
+        assert_eq!(board.pieces[squares::F3 as usize], pieces::WN as u8, "Did not correctly place white knight on F3");
         assert_eq!(board.pieces[0], squares::OFFBOARD, "Did not preserve offboard values");
-        assert_eq!(board.side, 0, "Did not correctly set it as white's move");
+        assert_eq!(board.side, 1, "Did not correctly set it as black's move");
         assert_eq!(board.castle_perm, 7, "Did not correctly set castling permission");
-        assert_eq!(board.en_passant, squares::NO_SQ, "Did not correctly set en passant square");
+        assert_eq!(board.en_passant, squares::E3, "Did not correctly set en passant square");
+        //assert_eq!(board.)
         //assert_eq!(board.pawns[0].board, white_pawn_bb, "Did not correctly set position of white pawn bitboard");
     }
 
