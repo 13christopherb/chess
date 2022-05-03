@@ -24,7 +24,7 @@ pub fn bitscan_forward(bits:u64) -> u8 {
 
 #[cfg(test)]
 mod test {
-    use crate::bit_operations::bitscan_forward;
+    use crate::utils::bit_operations::bitscan_forward;
 
     #[test]
     fn test_bitscan_forward() {

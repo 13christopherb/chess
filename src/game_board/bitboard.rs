@@ -1,91 +1,90 @@
 /// Module for bitboards which use a 64 bit unsigned integer where each bit represents the
 /// presence of a piece for one particular square.
 
-pub mod bitboard {
-    use crate::bit_operations::bitscan_forward;
-    use crate::Board;
-    use crate::constants::{ranks, files};
-    use crate::utils::utils::fr2sq;
+use crate::utils::bit_operations::bitscan_forward;
+use crate::Board;
+use crate::constants::{ranks, files};
+use crate::utils::square_utils::fr2sq;
 
-    #[derive(Debug, Copy, Clone)]
-    pub struct BitBoard {
-        pub board: u64,
-        set_mask: [u64; 64],
-        clear_mask: [u64; 64],
-    }
+#[derive(Debug, Copy, Clone)]
+pub struct BitBoard {
+    pub board: u64,
+    set_mask: [u64; 64],
+    clear_mask: [u64; 64],
+}
 
-    impl BitBoard {
-        pub fn new(board: u64) -> BitBoard {
+impl BitBoard {
+    pub fn new(board: u64) -> BitBoard {
 
-            //Set and clear masks are used to quickly change individual bits in bitboard
-            // with bitwise operations
-            let mut set_mask = [0; 64];
-            let mut clear_mask = [0; 64];
+        //Set and clear masks are used to quickly change individual bits in bitboard
+        // with bitwise operations
+        let mut set_mask = [0; 64];
+        let mut clear_mask = [0; 64];
 
-            for i in 0..64 {
-                set_mask[i] |= 1 << i as u64;
-                clear_mask[i] = !set_mask[i];
-            }
-
-            BitBoard {
-                board,
-                set_mask,
-                clear_mask,
-            }
+        for i in 0..64 {
+            set_mask[i] |= 1 << i as u64;
+            clear_mask[i] = !set_mask[i];
         }
 
-        #[inline(always)]
-        pub fn set_bit(&mut self, sq: u8) {
-            self.board |= self.set_mask[sq as usize]
-        }
-
-        #[inline(always)]
-        pub fn clear_bit(&mut self, sq: u8) {
-            self.board &= self.clear_mask[sq as usize]
-        }
-
-        #[inline(always)]
-        /// Removes least significant bit and returns its index
-        pub fn pop_bit(&mut self) -> u8 {
-            let index: u8 = bitscan_forward(self.board);
-            self.board ^= 1 << index;
-            index
-        }
-
-        #[inline(always)]
-        /// Counts the number of 1 bits in the bitboard
-        pub fn count_bits(&mut self) -> u8 {
-            self.board.count_ones() as u8
-        }
-
-        #[inline(always)]
-        /// Checks if a piece is present at the given 64 square index
-        pub fn piece_is_present(self, sq64: u8) -> bool {
-            (1 << sq64) & self.board > 0
+        BitBoard {
+            board,
+            set_mask,
+            clear_mask,
         }
     }
 
-    /// Prints the bitboard out on 8x8 grid with x marking the presence of a piece
-    /// and - marking an empty square
-    impl std::fmt::Display for BitBoard {
-        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            let board = Board::new();
-            let mut output = String::from("");
-            for rank in ranks::RANK_1..ranks::RANK_NONE {
-                for file in files::FILE_A..files::FILE_NONE {
-                    let sq: u8 = board.sq120_to_sq64[fr2sq(file, rank) as usize];
-                    output.push_str(if self.piece_is_present(sq) { "x " } else { "- " });
-                }
-                output.push('\n');
-            }
-            write!(f, "{}", output)
-        }
+    #[inline(always)]
+    pub fn set_bit(&mut self, sq: u8) {
+        self.board |= self.set_mask[sq as usize]
+    }
+
+    #[inline(always)]
+    pub fn clear_bit(&mut self, sq: u8) {
+        self.board &= self.clear_mask[sq as usize]
+    }
+
+    #[inline(always)]
+    /// Removes least significant bit and returns its index
+    pub fn pop_bit(&mut self) -> u8 {
+        let index: u8 = bitscan_forward(self.board);
+        self.board ^= 1 << index;
+        index
+    }
+
+    #[inline(always)]
+    /// Counts the number of 1 bits in the bitboard
+    pub fn count_bits(&mut self) -> u8 {
+        self.board.count_ones() as u8
+    }
+
+    #[inline(always)]
+    /// Checks if a piece is present at the given 64 square index
+    pub fn piece_is_present(self, sq64: u8) -> bool {
+        (1 << sq64) & self.board > 0
     }
 }
 
+/// Prints the bitboard out on 8x8 grid with x marking the presence of a piece
+/// and - marking an empty square
+impl std::fmt::Display for BitBoard {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let board = Board::new();
+        let mut output = String::from("");
+        for rank in ranks::RANK_1..ranks::RANK_NONE {
+            for file in files::FILE_A..files::FILE_NONE {
+                let sq: u8 = board.sq120_to_sq64[fr2sq(file, rank) as usize];
+                output.push_str(if self.piece_is_present(sq) { "x " } else { "- " });
+            }
+            output.push('\n');
+        }
+        write!(f, "{}", output)
+    }
+}
+
+
 #[cfg(test)]
 mod test {
-    use crate::bitboard::bitboard::BitBoard;
+    use crate::game_board::bitboard::BitBoard;
 
     #[test]
     fn test_set_bit() {

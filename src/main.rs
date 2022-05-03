@@ -1,13 +1,8 @@
-mod bitboard;
-mod bit_operations;
-mod board;
+mod game_board;
 mod constants;
-mod hashkeys;
 mod utils;
 
-use crate::board::Board;
-use crate::utils::utils::check_board;
-
+use crate::game_board::board::{Board, check_board};
 
 fn main() {
     let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
