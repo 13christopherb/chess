@@ -5,6 +5,7 @@ use crate::utils::utils::fr2sq;
 
 /// Code used for storing the general state of the board
 
+#[derive(Debug, Copy, Clone)]
 pub struct PastMove {
     moved: u64,
     en_passant: u64,
@@ -15,13 +16,14 @@ pub struct PastMove {
 
 }
 
+#[derive(Debug, Clone)]
 pub struct Board {
-    pieces: [u8; 120],
-    pawns: [BitBoard; 3],
-    king_sq: [u8; 2],
+    pub pieces: [u8; 120],
+    pub pawns: [BitBoard; 3],
+    pub king_sq: [u8; 2],
     fifty_move: u64,
-    side: u8,
-    en_passant: u8,
+    pub side: u8,
+    pub en_passant: u8,
 
     ply: u64,
     history_ply: u64,
@@ -30,11 +32,11 @@ pub struct Board {
 
     hash_key: u64,
 
-    num_pieces: [u8; 13],
-    num_big_pieces: [u8; 2],
-    num_major_pieces: [u8; 2],
-    num_minor_pieces: [u8; 2],
-    material: [u32; 2],
+    pub num_pieces: [u8; 13],
+    pub num_big_pieces: [u8; 2],
+    pub num_major_pieces: [u8; 2],
+    pub num_minor_pieces: [u8; 2],
+    pub material: [u32; 2],
 
     history: Vec<PastMove>,
 
@@ -45,7 +47,7 @@ pub struct Board {
     pub files_squares: [u8; 120],
     pub ranks_squares: [u8; 120],
 
-    piece_list: [[u8; 18]; 13],
+    pub piece_list: [[u8; 18]; 13],
 
     hasher: BoardHasher,
 
@@ -151,27 +153,31 @@ impl Board {
         self.hash_key = 0;
     }
 
+    /// Updates the rest of the board's state with regards to pieces to match the current piece list
     pub fn update_material_list(&mut self) {
-        let mut sq = 0;
+        let mut sq: u8;
         for i in 0..120 {
             sq = i as u8;
-            let mut piece = self.pieces[i];
-            let mut color: usize;
+            let piece = self.pieces[i];
+            let color: usize;
             if piece != squares::OFFBOARD && piece != pieces::EMPTY {
                 color = piece_values::PIECE_COLOR[piece as usize] as usize;
 
-                if piece_values::BIG_PIECE[piece as usize] { self.num_big_pieces[color] += 1;}
-                if piece_values::MINOR_PIECE[piece as usize] { self.num_minor_pieces[color] += 1;}
-                if piece_values::MAJOR_PIECE[piece as usize] { self.num_major_pieces[color] += 1;}
+                if piece_values::BIG_PIECE[piece as usize] { self.num_big_pieces[color] += 1; }
+                if piece_values::MINOR_PIECE[piece as usize] { self.num_minor_pieces[color] += 1; }
+                if piece_values::MAJOR_PIECE[piece as usize] { self.num_major_pieces[color] += 1; }
 
                 self.material[color] += piece_values::VALUE[piece as usize];
 
                 self.piece_list[piece as usize][self.num_pieces[piece as usize] as usize] = sq;
                 self.num_pieces[piece as usize] += 1;
 
-                if piece == pieces::WK {self.king_sq[color] = sq;}
-                if piece == pieces::BK {self.king_sq[color] = sq;}
+                if piece == pieces::WK || piece == pieces::BK { self.king_sq[color] = sq; }
 
+                if piece == pieces::WP || piece == pieces::BP {
+                    self.pawns[color].set_bit(self.sq120_to_sq64[sq as usize]);
+                    self.pawns[piece_values::BOTH as usize].set_bit(self.sq120_to_sq64[sq as usize]);
+                }
             }
         }
     }
@@ -195,6 +201,7 @@ impl Board {
         let mut i: usize = 0;
         let length = fen.chars().count();
 
+        // Use i to keep track of number of loops in case string isn't formatted right
         while rank >= 0 && i < length {
             count = 1;
             match *c as char {
@@ -305,7 +312,7 @@ impl std::fmt::Display for Board {
 #[cfg(test)]
 mod test {
     use crate::board::Board;
-    use crate::constants::{pieces, squares};
+    use crate::constants::{piece_values, pieces, squares};
     use crate::utils::utils::fr2sq;
 
     #[test]
@@ -359,6 +366,9 @@ mod test {
 
     #[test]
     fn test_update_material_list() {
+        const RANK_2: u64 = 0x0000_0000_0000_FF00;
+        const RANK_7: u64 = 0x00FF_0000_0000_0000;
+        let both_ranks = RANK_2 | RANK_7;
         let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
         let mut board = Board::new();
@@ -374,6 +384,10 @@ mod test {
         assert_eq!(board.material[0], 54200, "Did not correctly set material value for white");
         assert_eq!(board.material[1], 54200, "Did not correctly set material value for black");
         assert_eq!(board.piece_list[1][4], 35, "Did not correctly set square for white pawn");
+        assert_eq!(format!("{:b}",board.pawns[piece_values::WHITE as usize].board), format!("{:b}", RANK_2), "Did not set white bitboard correctly");
+        assert_eq!(format!("{:b}",board.pawns[piece_values::BLACK as usize].board), format!("{:b}", RANK_7), "Did not set black bitboard correctly");
+        assert_eq!(format!("{:b}",board.pawns[piece_values::BOTH as usize].board), format!("{:b}", both_ranks), "Did not set both bitboard correctly");
+
     }
 }
 

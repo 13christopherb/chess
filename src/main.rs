@@ -6,6 +6,7 @@ mod hashkeys;
 mod utils;
 
 use crate::board::Board;
+use crate::utils::utils::check_board;
 
 
 fn main() {
@@ -14,5 +15,7 @@ fn main() {
 
     let mut board = Board::new();
     unsafe { board.parse_fen(start) };
+    board.update_material_list();
+    assert!(check_board(board.clone()));
     print!("{}", board);
 }

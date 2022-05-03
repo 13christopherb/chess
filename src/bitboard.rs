@@ -35,12 +35,12 @@ pub mod bitboard {
         }
 
         #[inline(always)]
-        pub fn set_bit(&mut self, sq: u64) {
+        pub fn set_bit(&mut self, sq: u8) {
             self.board |= self.set_mask[sq as usize]
         }
 
         #[inline(always)]
-        pub fn clear_bit(&mut self, sq: u64) {
+        pub fn clear_bit(&mut self, sq: u8) {
             self.board &= self.clear_mask[sq as usize]
         }
 
@@ -147,7 +147,7 @@ mod test {
 
     #[test]
     fn test_pop_bit() {
-        let initial_bits: u64 = 0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
+        let initial_bits: u64 = 0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00100000;
         let mut board: BitBoard = BitBoard::new(initial_bits);
         let index = board.pop_bit();
         assert_eq!(board.count_bits(),
@@ -158,5 +158,6 @@ mod test {
                    0b00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000000,
                    "Did not remove correct bit"
         );
+        assert_eq!(index, 5, "Did not return correct index");
     }
 }

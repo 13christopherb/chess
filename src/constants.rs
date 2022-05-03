@@ -69,8 +69,11 @@ pub mod squares {
 }
 pub mod piece_values {
     pub const WHITE:u8 = 0;
+    pub const WHITE_S:usize = 0;
     pub const BLACK:u8 = 1;
+    pub const BLACK_S:usize = 1;
     pub const BOTH:u8 = 2;
+    pub const BOTH_S:usize = 2;
     pub const BIG_PIECE:[bool; 13] = [ false, false, true, true, true, true, true, false, true, true, true, true, true ];
     pub const MAJOR_PIECE:[bool; 13] = [ false, false, false, false, true, true, true, false, false, false, true, true, true ];
     pub const MINOR_PIECE:[bool; 13] = [ false, false, true, true, false, false, false, false, true, true, false, false, false ];
