@@ -19,6 +19,44 @@ pub mod pieces {
     pub const BR:u8 = 10;
     pub const BQ:u8 = 11;
     pub const BK:u8 = 12;
+
+    pub const KNIGHT_NUMBER:[bool; 13] = [false, false, true, false, false, false,
+        false, false, true, false, false, false, false];
+    pub const BISHOP_QUEEN_NUMBER:[bool; 13] = [false, false, false, true, false, true,
+        false, false, false, true, false, true, false];
+    pub const ROOK_QUEEN_NUMBER:[bool; 13] = [false, false, false, false, true, true,
+        false, false, false, false, true, true, false];
+    pub const KING_NUMBER:[bool; 13] = [false, false, false, false, false, false,
+        true, false, false, false, false, false, true];
+
+    #[inline(always)]
+    pub fn is_knight(pce:u8) -> bool { KNIGHT_NUMBER[pce as usize] }
+
+    #[inline(always)]
+    pub fn is_bishop_or_queen(pce:u8) -> bool { BISHOP_QUEEN_NUMBER[pce as usize] }
+
+    #[inline(always)]
+    pub fn is_rook_or_queen(pce:u8) -> bool { ROOK_QUEEN_NUMBER[pce as usize] }
+
+    #[inline(always)]
+    pub fn is_king(pce:u8) -> bool { KING_NUMBER[pce as usize] }
+
+    pub const WHITE:u8 = 0;
+    pub const WHITE_S:usize = 0;
+    pub const BLACK:u8 = 1;
+    pub const BLACK_S:usize = 1;
+    pub const BOTH:u8 = 2;
+    pub const BOTH_S:usize = 2;
+    pub const BIG_PIECE:[bool; 13] = [ false, false, true, true, true, true, true, false, true, true, true, true, true ];
+    pub const MAJOR_PIECE:[bool; 13] = [ false, false, false, false, true, true, true, false, false, false, true, true, true ];
+    pub const MINOR_PIECE:[bool; 13] = [ false, false, true, true, false, false, false, false, true, true, false, false, false ];
+    pub const VALUE:[u32; 13] = [0, 100, 325, 325,  550, 1000, 50000, 100, 325, 325, 550, 1000, 50000];
+    pub const PIECE_COLOR:[u8; 13] = [BOTH, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
+        BLACK, BLACK, BLACK, BLACK, BLACK, BLACK];
+
+    #[inline(always)]
+    pub fn is_same_color(pce:u8, color:u8) -> bool { PIECE_COLOR[pce as usize] == color }
+
 }
 
 pub mod files {
@@ -66,19 +104,4 @@ pub mod squares {
 
     pub const NO_SQ:u8 = 99;
     pub const OFFBOARD:u8 = 100;
-}
-pub mod piece_values {
-    pub const WHITE:u8 = 0;
-    pub const WHITE_S:usize = 0;
-    pub const BLACK:u8 = 1;
-    pub const BLACK_S:usize = 1;
-    pub const BOTH:u8 = 2;
-    pub const BOTH_S:usize = 2;
-    pub const BIG_PIECE:[bool; 13] = [ false, false, true, true, true, true, true, false, true, true, true, true, true ];
-    pub const MAJOR_PIECE:[bool; 13] = [ false, false, false, false, true, true, true, false, false, false, true, true, true ];
-    pub const MINOR_PIECE:[bool; 13] = [ false, false, true, true, false, false, false, false, true, true, false, false, false ];
-    pub const VALUE:[u32; 13] = [0, 100, 325, 325,  550, 1000, 50000, 100, 325, 325, 550, 1000, 50000];
-    pub const PIECE_COLOR:[u8; 13] = [BOTH, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
-        BLACK, BLACK, BLACK, BLACK, BLACK, BLACK];
-
 }
