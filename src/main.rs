@@ -5,19 +5,15 @@ mod move_gen;
 
 use crate::game_board::board::{Board, check_board};
 
-fn testing(test:&Board) {
-    let mut x = 2;
-    x += 1;
-}
 
 fn main() {
-    let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    let start: &str = "rnbqkbnr/ppp1p2p/3p4/3p4/2P1Pp2/8/PP1P1PpP/RNBQKBNR b KQkq e3 0 10";
     let white_pawn_bb: u64 = 0x0000_0000_0000_FF00;
 
     let mut board = Board::new();
     unsafe { board.parse_fen(start) };
-    testing(&board);
     board.update_material_list();
-    assert!(check_board(&board));
-    print!("{}", board);
+    for i in 0..board.num_pieces[7] {
+        println!("{}", board.piece_list[7][i as usize]);
+    }
 }

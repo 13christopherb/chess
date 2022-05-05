@@ -6,6 +6,7 @@ pub mod castling {
 }
 
 pub mod pieces {
+    use crate::constants::squares::OFFBOARD;
 
     pub const WHITE:u8 = 0;
     pub const BLACK:u8 = 1;
@@ -62,10 +63,10 @@ pub mod pieces {
     pub fn is_same_color(pce:u8, color:u8) -> bool { PIECE_COLOR[pce as usize] == color }
 
     #[inline(always)]
-    pub fn is_white(pce:u8,) -> bool { PIECE_COLOR[pce as usize] == WHITE }
+    pub fn is_white(pce:u8,) -> bool {pce != OFFBOARD && PIECE_COLOR[pce as usize] == WHITE }
 
     #[inline(always)]
-    pub fn is_black(pce:u8,) -> bool { PIECE_COLOR[pce as usize] == BLACK }
+    pub fn is_black(pce:u8,) -> bool {pce != OFFBOARD && PIECE_COLOR[pce as usize] == BLACK }
 
 }
 
