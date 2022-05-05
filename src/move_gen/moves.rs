@@ -10,27 +10,27 @@
     0001 0000 0000 0000 0000 0000 0000 -> Castle 0x1000000
  */
 
-const MFLAG_EP:u32 = 0x40000; // En passant
-const MFLAG_PS:u32 = 0x80000; // Pawn start
-const MFLAG_CA:u32 = 0x1000000; // Castle
-const MFLAG_CAP:u32 = 0x7C000; // Capture
-const MFLAG_PROM:u32 = 0xF00000; // Promotion
+pub const MFLAG_EP:u32 = 0x40000; // En passant
+pub const MFLAG_PS:u32 = 0x80000; // Pawn start
+pub const MFLAG_CA:u32 = 0x1000000; // Castle
+pub const MFLAG_CAP:u32 = 0x7C000; // Capture
+pub const MFLAG_PROM:u32 = 0xF00000; // Promotion
 
 #[derive(Debug)]
 pub struct GameMove {
-    move_int: u32,
-    score: u8,
+    pub(crate) move_int: u32,
+    pub(crate) score: u8,
 }
 
 impl GameMove {
 
     #[inline(always)]
-    pub fn new(from:u8, to:u8, cap:u8, ep:u8, pst:u8,
-               prom:u8, cast:u8, score:u8) -> GameMove {
-        let move_int:u32 = (from as u32) | (to as u32) << 7 | (cap as u32) << 14 | (prom as u32) << 20;
+    pub fn new(from:u8, to:u8, cap:u8,
+               prom:u8, flag:u32) -> GameMove {
+        let move_int:u32 = (from as u32) | (to as u32) << 7 | (cap as u32) << 14 | (prom as u32) << 20 | flag;
         GameMove {
             move_int,
-            score
+            score: 0
         }
     }
     #[inline(always)]

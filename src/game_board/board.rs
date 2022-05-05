@@ -44,9 +44,6 @@ pub struct Board {
     // Array to convert 10x12 square numbers to 8x8 square numbers
     pub sq64_to_sq120: [u8; 64], //Array to convert 8x8 square numbers to 10x12 square numbers
 
-    pub files_squares: [u8; 120],
-    pub ranks_squares: [u8; 120],
-
     pub piece_list: [[u8; 18]; 13],
 
     hasher: BoardHasher,
@@ -68,8 +65,6 @@ impl Board {
             }
         }
 
-        let (mut files_squares, mut ranks_squares) = Board::init_file_rank_arrays();
-
         Board {
             pieces: [0; 120],
             pawns: [BitBoard::new(0); 3],
@@ -89,35 +84,12 @@ impl Board {
             history: vec![],
             sq120_to_sq64,
             sq64_to_sq120,
-            files_squares,
-            ranks_squares,
             piece_list: [[0; 18]; 13],
             hasher: BoardHasher::new(),
         }
     }
 }
 impl Board {
-    /// Initializes arrays that have either the file or rank number for each square (or offboard
-    /// if the 120 board square is off the 8x8 board
-    fn init_file_rank_arrays() -> ([u8; 120], [u8; 120]) {
-        let mut files: [u8; 120] = [0; 120];
-        let mut ranks: [u8; 120] = [0; 120];
-
-        for i in 0..120 {
-            files[i] = squares::OFFBOARD;
-            ranks[i] = squares::OFFBOARD;
-        }
-
-        for rank in ranks::RANK_1..=ranks::RANK_8 {
-            for file in files::FILE_A..=files::FILE_H {
-                let sq = fr2sq(file, rank) as usize;
-                files[sq] = file;
-                ranks[sq] = rank;
-            }
-        }
-
-        (files, ranks)
-    }
 
     /// Resets the position to an empty board
     pub fn reset_position(&mut self) {
@@ -314,7 +286,7 @@ impl std::fmt::Display for Board {
 /// TODO: need to add an assert for a valid hash key
 /// # Panic
 /// Will panic if any of the board's state seems to be incorrect
-pub fn check_board(board:Board) -> bool {
+pub fn check_board(board:&Board) -> bool {
     let mut num_pieces = [0; 13];
     let mut big_pieces = [0; 2];
     let mut major_pieces = [0; 2];
@@ -392,11 +364,11 @@ pub fn check_board(board:Board) -> bool {
 
     assert!(board.side == pieces::WHITE || board.side == pieces::BLACK);
 
-    assert!(board.en_passant == squares::NO_SQ ||
-        ( board.ranks_squares[board.en_passant as usize] == ranks::RANK_6 &&
-            board.side == pieces::WHITE) ||
-        (board.ranks_squares[board.en_passant as usize] == ranks::RANK_3 &&
-            board.side == pieces::BLACK));
+    // assert!(board.en_passant == squares::NO_SQ ||
+    //     ( board.ranks_squares[board.en_passant as usize] == ranks::RANK_6 &&
+    //         board.side == pieces::WHITE) ||
+    //     (board.ranks_squares[board.en_passant as usize] == ranks::RANK_3 &&
+    //         board.side == pieces::BLACK));
 
     assert_eq!(board.pieces[board.king_sq[pieces::WHITE_S] as usize], pieces::WK);
     assert_eq!(board.pieces[board.king_sq[pieces::BLACK_S] as usize], pieces::BK);
@@ -435,10 +407,6 @@ mod test {
             sum += value as i32;
         }
         assert_eq!(sum, 3808, "Sum of sq64_to_s120 contents not correct");
-
-        assert_eq!(board.files_squares[34], 3, "Did not initialize files array correctly");
-        assert_eq!(board.ranks_squares[32], 1, "Did not initialize ranks array correctly");
-
     }
 
     #[test]

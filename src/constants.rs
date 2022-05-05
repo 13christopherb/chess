@@ -6,7 +6,12 @@ pub mod castling {
 }
 
 pub mod pieces {
+
+    pub const WHITE:u8 = 0;
+    pub const BLACK:u8 = 1;
+    pub const BOTH:u8 = 2;
     pub const EMPTY:u8 = 0;
+
     pub const WP:u8 = 1;
     pub const WN:u8 = 2;
     pub const WB:u8 = 3;
@@ -19,6 +24,11 @@ pub mod pieces {
     pub const BR:u8 = 10;
     pub const BQ:u8 = 11;
     pub const BK:u8 = 12;
+
+    pub const WHITE_S:usize = 0;
+    pub const BLACK_S:usize = 1;
+    pub const EMPTY_S:usize = 0;
+    pub const BOTH_S:usize = 2;
 
     pub const KNIGHT_NUMBER:[bool; 13] = [false, false, true, false, false, false,
         false, false, true, false, false, false, false];
@@ -41,12 +51,6 @@ pub mod pieces {
     #[inline(always)]
     pub fn is_king(pce:u8) -> bool { KING_NUMBER[pce as usize] }
 
-    pub const WHITE:u8 = 0;
-    pub const WHITE_S:usize = 0;
-    pub const BLACK:u8 = 1;
-    pub const BLACK_S:usize = 1;
-    pub const BOTH:u8 = 2;
-    pub const BOTH_S:usize = 2;
     pub const BIG_PIECE:[bool; 13] = [ false, false, true, true, true, true, true, false, true, true, true, true, true ];
     pub const MAJOR_PIECE:[bool; 13] = [ false, false, false, false, true, true, true, false, false, false, true, true, true ];
     pub const MINOR_PIECE:[bool; 13] = [ false, false, true, true, false, false, false, false, true, true, false, false, false ];
@@ -57,9 +61,17 @@ pub mod pieces {
     #[inline(always)]
     pub fn is_same_color(pce:u8, color:u8) -> bool { PIECE_COLOR[pce as usize] == color }
 
+    #[inline(always)]
+    pub fn is_white(pce:u8,) -> bool { PIECE_COLOR[pce as usize] == WHITE }
+
+    #[inline(always)]
+    pub fn is_black(pce:u8,) -> bool { PIECE_COLOR[pce as usize] == BLACK }
+
 }
 
 pub mod files {
+    use crate::constants::squares::OFFBOARD;
+
     pub const FILE_A:u8 = 0;
     pub const FILE_B:u8 = 1;
     pub const FILE_C:u8 = 2;
@@ -69,9 +81,26 @@ pub mod files {
     pub const FILE_G:u8 = 6;
     pub const FILE_H:u8 = 7;
     pub const FILE_NONE:u8 = 8;
+
+    pub const FILE_SQUARES:[u8; 120] = [
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, OFFBOARD,
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+    ];
 }
 
 pub mod ranks {
+    use crate::constants::squares::OFFBOARD;
+
     pub const RANK_1:u8 = 0;
     pub const RANK_2:u8 = 1;
     pub const RANK_3:u8 = 2;
@@ -81,9 +110,46 @@ pub mod ranks {
     pub const RANK_7:u8 = 6;
     pub const RANK_8:u8 = 7;
     pub const RANK_NONE:u8 = 8;
+
+    pub const RANK_SQUARES:[u8; 120] = [
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+        OFFBOARD, RANK_1, RANK_1, RANK_1, RANK_1, RANK_1, RANK_1, RANK_1, RANK_1, OFFBOARD,
+        OFFBOARD, RANK_2, RANK_2, RANK_2, RANK_2, RANK_2, RANK_2, RANK_2, RANK_2, OFFBOARD,
+        OFFBOARD, RANK_3, RANK_3, RANK_3, RANK_3, RANK_3, RANK_3, RANK_3, RANK_3, OFFBOARD,
+        OFFBOARD, RANK_4, RANK_4, RANK_4, RANK_4, RANK_4, RANK_4, RANK_4, RANK_4, OFFBOARD,
+        OFFBOARD, RANK_5, RANK_5, RANK_5, RANK_5, RANK_5, RANK_5, RANK_5, RANK_5, OFFBOARD,
+        OFFBOARD, RANK_6, RANK_6, RANK_6, RANK_6, RANK_6, RANK_6, RANK_6, RANK_6, OFFBOARD,
+        OFFBOARD, RANK_7, RANK_7, RANK_7, RANK_7, RANK_7, RANK_7, RANK_7, RANK_7, OFFBOARD,
+        OFFBOARD, RANK_8, RANK_8, RANK_8, RANK_8, RANK_8, RANK_8, RANK_8, RANK_8, OFFBOARD,
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+        OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD, OFFBOARD,
+    ];
 }
 
 pub mod squares {
+    use crate::constants::files::FILE_SQUARES;
+
+    pub const FILE_A:u8 = 0;
+    pub const FILE_B:u8 = 1;
+    pub const FILE_C:u8 = 2;
+    pub const FILE_D:u8 = 3;
+    pub const FILE_E:u8 = 4;
+    pub const FILE_F:u8 = 5;
+    pub const FILE_G:u8 = 6;
+    pub const FILE_H:u8 = 7;
+    pub const FILE_NONE:u8 = 8;
+
+    pub const RANK_1:u8 = 0;
+    pub const RANK_2:u8 = 1;
+    pub const RANK_3:u8 = 2;
+    pub const RANK_4:u8 = 3;
+    pub const RANK_5:u8 = 4;
+    pub const RANK_6:u8 = 5;
+    pub const RANK_7:u8 = 6;
+    pub const RANK_8:u8 = 7;
+    pub const RANK_NONE:u8 = 8;
+
     pub const A1:u8 = 21; pub const A2:u8 = 31; pub const A3:u8 = 41; pub const A4:u8 = 51;
     pub const B1:u8 = 22; pub const B2:u8 = 32; pub const B3:u8 = 42; pub const B4:u8 = 52;
     pub const C1:u8 = 23; pub const C2:u8 = 33; pub const C3:u8 = 43; pub const C4:u8 = 53;
@@ -104,4 +170,7 @@ pub mod squares {
 
     pub const NO_SQ:u8 = 99;
     pub const OFFBOARD:u8 = 100;
+
+    #[inline(always)]
+    pub fn is_sq_on_board(sq:u8,) -> bool { FILE_SQUARES[sq as usize] != OFFBOARD }
 }
