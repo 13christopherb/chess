@@ -16,10 +16,10 @@ pub const MFLAG_CA:u32 = 0x1000000; // Castle
 pub const MFLAG_CAP:u32 = 0x7C000; // Capture
 pub const MFLAG_PROM:u32 = 0xF00000; // Promotion
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct GameMove {
-    pub(crate) move_int: u32,
-    pub(crate) score: u8,
+    pub move_int: u32,
+    pub score: u8,
 }
 
 impl GameMove {

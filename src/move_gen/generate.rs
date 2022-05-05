@@ -91,5 +91,40 @@ fn generate_all_moves(pos:&Board, list:&mut Vec<GameMove>) {
     }
 }
 
+#[cfg(test)]
+mod test {
+    use crate::Board;
+    use crate::constants::{files, pieces, ranks};
+    use crate::move_gen::generate::add_wp_capture_move;
+    use crate::move_gen::moves::GameMove;
+    use crate::utils::square_utils::fr2sq;
+
+    #[test]
+    fn test_white_pawn_capture_promote() {
+        let fen = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/P1P1P2P/RNBQKBNR w KQkq e6 0 10";
+        let mut board = Board::new();
+        unsafe{ board.parse_fen(fen); }
+        let mut move_list:Vec<GameMove> = Vec::new();
+        add_wp_capture_move(&board, fr2sq(files::FILE_G, ranks::RANK_7),
+                            fr2sq(files::FILE_H, ranks::RANK_8),
+                            pieces::BR, &mut move_list);
+        assert_eq!(move_list.len(), 4, "Did not generate correct number of moves");
+        assert_eq!(move_list[0].move_int, 0x52b157, "Did not generate gxh8=Q?"); //gxh8=Q?
+        assert_eq!(move_list[3].move_int, 0x22b157, "Did not generate gxh8=N?"); //gxh8=N?
+    }
+
+    fn test_white_pawn_capture() {
+        let fen = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/P1P1P2P/RNBQKBNR w KQkq e6 0 10";
+        let mut board = Board::new();
+        unsafe{ board.parse_fen(fen); }
+        let mut move_list:Vec<GameMove> = Vec::new();
+        add_wp_capture_move(&board, fr2sq(files::FILE_B, ranks::RANK_4),
+                            fr2sq(files::FILE_C, ranks::RANK_5),
+                            pieces::BP, &mut move_list);
+        assert_eq!(move_list.len(), 1, "Did not generate correct number of moves");
+        assert_eq!(move_list[0].move_int, 0x1d119, "Did not generate bxc5"); //bxc5
+    }
+
+}
 
 
