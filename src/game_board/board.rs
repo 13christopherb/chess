@@ -1,5 +1,5 @@
 use crate::game_board::bitboard::BitBoard;
-use crate::constants::{castling, files, pieces, ranks, squares};
+use crate::constants::{castling, files, pieces, ranks, sqs};
 use crate::utils::hashkeys::BoardHasher;
 use crate::utils::square_utils::fr2sq;
 
@@ -28,7 +28,7 @@ pub struct Board {
     ply: u64,
     history_ply: u64,
 
-    castle_perm: u8, //Castle permission
+    pub castle_perm: u8, //Castle permission
 
     hash_key: u64,
 
@@ -94,7 +94,7 @@ impl Board {
     /// Resets the position to an empty board
     pub fn reset_position(&mut self) {
         for i in 0..120 {
-            self.pieces[i] = squares::OFFBOARD;
+            self.pieces[i] = sqs::OFFBOARD;
         }
         for i in 0..64 {
             self.pieces[usize::try_from(self.sq64_to_sq120[i]).unwrap()] = pieces::EMPTY;
@@ -116,7 +116,7 @@ impl Board {
         self.king_sq[1] = 0;
 
         self.side = 2;
-        self.en_passant = squares::NO_SQ;
+        self.en_passant = sqs::NO_SQ;
         self.fifty_move = 0;
 
         self.ply = 0;
@@ -134,7 +134,7 @@ impl Board {
             sq = i as u8;
             let piece = self.pieces[i];
             let color: usize;
-            if piece != squares::OFFBOARD && piece != pieces::EMPTY {
+            if piece != sqs::OFFBOARD && piece != pieces::EMPTY {
                 color = pieces::PIECE_COLOR[piece as usize] as usize;
 
                 if pieces::BIG_PIECE[piece as usize] { self.num_big_pieces[color] += 1; }
@@ -379,7 +379,7 @@ pub fn check_board(board:&Board) -> bool {
 #[cfg(test)]
 mod test {
     use crate::Board;
-    use crate::constants::{pieces, squares};
+    use crate::constants::{pieces, sqs};
     use crate::utils::square_utils::fr2sq;
 
     #[test]
@@ -418,11 +418,11 @@ mod test {
         let mut board = Board::new();
         unsafe { board.parse_fen(start) };
         assert_eq!(board.pieces[23], pieces::WB as u8, "Did not correctly place white bishop on F1");
-        assert_eq!(board.pieces[squares::F3 as usize], pieces::WN as u8, "Did not correctly place white knight on F3");
-        assert_eq!(board.pieces[0], squares::OFFBOARD, "Did not preserve offboard values");
+        assert_eq!(board.pieces[sqs::F3 as usize], pieces::WN as u8, "Did not correctly place white knight on F3");
+        assert_eq!(board.pieces[0], sqs::OFFBOARD, "Did not preserve offboard values");
         assert_eq!(board.side, 1, "Did not correctly set it as black's move");
         assert_eq!(board.castle_perm, 7, "Did not correctly set castling permission");
-        assert_eq!(board.en_passant, squares::E3, "Did not correctly set en passant square");
+        assert_eq!(board.en_passant, sqs::E3 as u8, "Did not correctly set en passant square");
         //assert_eq!(board.)
         //assert_eq!(board.pawns[0].board, white_pawn_bb, "Did not correctly set position of white pawn bitboard");
     }

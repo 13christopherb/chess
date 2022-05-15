@@ -1,6 +1,6 @@
 use crate::{Board, check_board};
-use crate::constants::{pieces, ranks, squares, ranks::RANK_SQUARES};
-use crate::constants::squares::is_sq_on_board;
+use crate::constants::{pieces::*, ranks, sqs::*, ranks::RANK_SQUARES, castling::*};
+use crate::move_gen::attack::is_square_attacked;
 use crate::move_gen::moves::{GameMove, MFLAG_EP, MFLAG_PS};
 use crate::utils::square_utils::{fr2sq, init_file_rank_arrays};
 
@@ -19,48 +19,48 @@ fn add_capture_move(pos:&Board, mve: GameMove, list:&mut Vec<GameMove>) {
 #[inline(always)]
 fn add_wp_capture_move(pos:&Board, from:u8, to:u8, cap:u8, list:&mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == ranks::RANK_7 {
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::WQ, 0), list);
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::WR, 0), list);
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::WB, 0), list);
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::WN, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, WQ, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, WR, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, WB, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, WN, 0), list);
     } else {
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::EMPTY, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, EMPTY, 0), list);
     }
 }
 
 #[inline(always)]
 fn add_wp_move(pos:&Board, from:u8, to:u8, list:&mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == ranks::RANK_7 {
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::WQ, 0), list);
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::WR, 0), list);
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::WB, 0), list);
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::WN, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, WQ, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, WR, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, WB, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, WN, 0), list);
     } else {
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::EMPTY, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, EMPTY, 0), list);
     }
 }
 
 #[inline(always)]
 fn add_bp_capture_move(pos:&Board, from:u8, to:u8, cap:u8, list:&mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == ranks::RANK_2 {
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::BQ, 0), list);
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::BR, 0), list);
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::BB, 0), list);
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::BN, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, BQ, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, BR, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, BB, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, BN, 0), list);
     } else {
-        add_capture_move(pos,GameMove::new(from, to, cap, pieces::EMPTY, 0), list);
+        add_capture_move(pos,GameMove::new(from, to, cap, EMPTY, 0), list);
     }
 }
 
 #[inline(always)]
 fn add_bp_move(pos:&Board, from:u8, to:u8, list:&mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == ranks::RANK_2 {
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::BQ, 0), list);
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::BR, 0), list);
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::BB, 0), list);
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::BN, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, BQ, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, BR, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, BB, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, BN, 0), list);
     } else {
-        add_quiet_move(pos,GameMove::new(from, to, pieces::EMPTY, pieces::EMPTY, 0), list);
+        add_quiet_move(pos,GameMove::new(from, to, EMPTY, EMPTY, 0), list);
     }
 }
 
@@ -82,41 +82,41 @@ fn add_bp_move(pos:&Board, from:u8, to:u8, list:&mut Vec<GameMove>) {
 fn generate_wp_moves(pos:&Board, list:&mut Vec<GameMove>) {
     let mut sq;
     let mut sqi:usize;
-    for pce_num in 0..pos.num_pieces[pieces::WP as usize] as usize {
-        sq = pos.piece_list[pieces::WP as usize][pce_num];
+    for pce_num in 0..pos.num_pieces[WP as usize] as usize {
+        sq = pos.piece_list[WP as usize][pce_num];
         sqi = sq as usize;
-        if pos.pieces[sqi + 10] == pieces::EMPTY {
+        if pos.pieces[sqi + 10] == EMPTY {
             add_wp_move(pos, sq, sq + 10, list);
             // If pawn can move two squares
-            if RANK_SQUARES[sqi] == ranks::RANK_2 && pos.pieces[sqi + 20] == pieces::EMPTY {
+            if RANK_SQUARES[sqi] == ranks::RANK_2 && pos.pieces[sqi + 20] == EMPTY {
                 add_quiet_move(pos, GameMove::new(sq,
                                                   sq + 20,
-                                                  pieces::EMPTY,
-                                                  pieces::EMPTY,
+                                                  EMPTY,
+                                                  EMPTY,
                                                   MFLAG_PS),
                                list)
             }
         }
 
-        if is_sq_on_board(sq as i32) && pieces::is_black(pos.pieces[sqi + 9]) {
+        if is_sq_on_board(sq as i32) && is_black(pos.pieces[sqi + 9]) {
             add_wp_capture_move(pos, sq, sq + 9, pos.pieces[sqi + 9], list);
         }
-        if is_sq_on_board(sq as i32) && pieces::is_black(pos.pieces[sqi + 11]) {
+        if is_sq_on_board(sq as i32) && is_black(pos.pieces[sqi + 11]) {
             add_wp_capture_move(pos, sq, sq + 11, pos.pieces[sqi + 11], list);
         }
 
         if sq + 9 == pos.en_passant {
             add_capture_move(pos, GameMove::new(sq,
                                                 sq + 9,
-                                                pieces::EMPTY,
-                                                pieces::EMPTY,
+                                                EMPTY,
+                                                EMPTY,
                                                 MFLAG_EP), list);
         }
         if sq + 11 == pos.en_passant {
             add_capture_move(pos, GameMove::new(sq,
                                                 sq + 11,
-                                                pieces::EMPTY,
-                                                pieces::EMPTY,
+                                                EMPTY,
+                                                EMPTY,
                                                 MFLAG_EP), list);
         }
     }
@@ -140,41 +140,41 @@ fn generate_wp_moves(pos:&Board, list:&mut Vec<GameMove>) {
 fn generate_bp_moves(pos:&Board, list:&mut Vec<GameMove>) {
     let mut sq;
     let mut sqi:usize;
-    for pce_num in 0..pos.num_pieces[pieces::BP as usize] as usize {
-        sq = pos.piece_list[pieces::BP as usize][pce_num];
+    for pce_num in 0..pos.num_pieces[BP as usize] as usize {
+        sq = pos.piece_list[BP as usize][pce_num];
         sqi = sq as usize;
-        if pos.pieces[sqi - 10] == pieces::EMPTY {
+        if pos.pieces[sqi - 10] == EMPTY {
             add_bp_move(pos, sq, sq - 10, list);
             // If pawn can move two squares
-            if RANK_SQUARES[sqi] == ranks::RANK_7 && pos.pieces[sqi - 20] == pieces::EMPTY {
+            if RANK_SQUARES[sqi] == ranks::RANK_7 && pos.pieces[sqi - 20] == EMPTY {
                 add_quiet_move(pos, GameMove::new(sq,
                                                   sq - 20,
-                                                  pieces::EMPTY,
-                                                  pieces::EMPTY,
+                                                  EMPTY,
+                                                  EMPTY,
                                                   MFLAG_PS),
                                list)
             }
         }
 
-        if is_sq_on_board(sq as i32) && pieces::is_white(pos.pieces[sqi - 9]) {
+        if is_sq_on_board(sq as i32) && is_white(pos.pieces[sqi - 9]) {
             add_bp_capture_move(pos, sq, sq - 9, pos.pieces[sqi - 9], list);
         }
-        if is_sq_on_board(sq as i32) && pieces::is_white(pos.pieces[sqi - 11]) {
+        if is_sq_on_board(sq as i32) && is_white(pos.pieces[sqi - 11]) {
             add_bp_capture_move(pos, sq, sq - 11, pos.pieces[sqi - 11], list);
         }
 
         if sq - 9 == pos.en_passant {
             add_capture_move(pos, GameMove::new(sq,
                                                 sq - 9,
-                                                pieces::EMPTY,
-                                                pieces::EMPTY,
+                                                EMPTY,
+                                                EMPTY,
                                                 MFLAG_EP), list);
         }
         if sq - 11 == pos.en_passant {
             add_capture_move(pos, GameMove::new(sq,
                                                 sq - 11,
-                                                pieces::EMPTY,
-                                                pieces::EMPTY,
+                                                EMPTY,
+                                                EMPTY,
                                                 MFLAG_EP), list);
         }
     }
@@ -182,51 +182,113 @@ fn generate_bp_moves(pos:&Board, list:&mut Vec<GameMove>) {
 
 #[inline(always)]
 fn generate_sliding_moves(pos:&Board, list:&mut Vec<GameMove>, side:u8) {
-    let mut piece_idx = pieces::LOOP_SLIDE_INDEX[side as usize] as usize;
-    let mut piece = pieces::LOOP_SLIDE[piece_idx];
-
-    while piece != 0 {
-        piece_idx += 1;
-        piece = pieces::LOOP_SLIDE[piece_idx];
-    }
-}
-
-#[inline(always)]
-fn generate_nonsliding_moves(pos:&Board, list:&mut Vec<GameMove>, side:u8) {
-    let mut piece_idx = pieces::LOOP_NONSLIDE_INDEX[side as usize] as usize;
-    let mut piece = pieces::LOOP_NONSLIDE[piece_idx] as usize;
+    let mut piece_idx = LOOP_SLIDE_INDEX[side as usize] as usize;
+    let mut piece = LOOP_SLIDE[piece_idx] as usize;
 
     while piece != 0 {
         for i in 0..pos.num_pieces[piece as usize] as usize {
             let sq = pos.piece_list[piece][i] as i32;
 
-            for j in 0..pieces::NUM_DIR[piece] {
-                let dir = pieces::PIECE_DIR[piece][j];
+            for j in 0..NUM_DIR[piece] {
+                let dir = PIECE_DIR[piece][j];
+                let mut t_sq = sq + dir;
+
+                while is_sq_on_board(t_sq) {
+                    let t_sqi = t_sq as usize;
+                    if pos.pieces[t_sqi] != EMPTY {
+                        if PIECE_COLOR[pos.pieces[t_sqi] as usize] == side ^ 1 {
+                            //Capture
+                        }
+                        continue;
+                    }
+                    t_sq += dir;
+                }
+            }
+        }
+        piece = LOOP_SLIDE[piece_idx] as usize;
+        piece_idx += 1;
+    }
+}
+
+#[inline(always)]
+fn generate_nonsliding_moves(pos:&Board, list:&mut Vec<GameMove>, side:u8) {
+    let mut piece_idx = LOOP_NONSLIDE_INDEX[side as usize] as usize;
+    let mut piece = LOOP_NONSLIDE[piece_idx] as usize;
+
+    while piece != 0 {
+        for i in 0..pos.num_pieces[piece as usize] as usize {
+            let sq = pos.piece_list[piece][i] as i32;
+
+            for j in 0..NUM_DIR[piece] {
+                let dir = PIECE_DIR[piece][j];
                 let t_sq = sq + dir;
                 if !is_sq_on_board(t_sq) {
                     continue;
                 }
                 let t_sq = t_sq as usize;
 
-                if pos.pieces[t_sq] != pieces::EMPTY {
-                    if pieces::PIECE_COLOR[pos.pieces[t_sq] as usize] == side ^ 1 {
+                if pos.pieces[t_sq] != EMPTY {
+                    if PIECE_COLOR[pos.pieces[t_sq] as usize] == side ^ 1 {
                         //Capture
                     }
                     continue;
                 }
             }
         }
-        piece = pieces::LOOP_NONSLIDE[piece_idx] as usize;
+        piece = LOOP_NONSLIDE[piece_idx] as usize;
         piece_idx += 1;
     }
+}
+
+fn generate_castling_moves(pos:&Board, list:&mut Vec<GameMove>) {
+
 }
 
 fn generate_all_moves(pos:&Board, list:&mut Vec<GameMove>) {
     assert!(check_board(pos));
 
-    if pos.side == pieces::WHITE {
+    if pos.side == WHITE {
+        generate_wp_moves(pos, list);
 
-    } else {}
+        if pos.castle_perm & WK_CASTLE != 0 {
+            if pos.pieces[F1] == EMPTY && pos.pieces[G1] == EMPTY {
+                if !is_square_attacked(E1 as u8, BLACK, &pos.pieces) &&
+                    !is_square_attacked(F1 as u8, BLACK, &pos.pieces) {
+                    //WK castle move
+                }
+            }
+        }
+
+        if pos.castle_perm & WQ_CASTLE != 0 {
+            if pos.pieces[D1] == EMPTY && pos.pieces[C1] == EMPTY && pos.pieces[B1] == EMPTY {
+                if !is_square_attacked(D1 as u8, BLACK, &pos.pieces) &&
+                    !is_square_attacked(C1 as u8, BLACK, &pos.pieces) &&
+                    !is_square_attacked(B1 as u8, BLACK, &pos.pieces) {
+                    //WQ castle move
+                }
+            }
+        }
+    } else {
+        generate_bp_moves(pos, list);
+
+        if pos.castle_perm & BK_CASTLE != 0 {
+            if pos.pieces[F8] == EMPTY && pos.pieces[G8] == EMPTY {
+                if !is_square_attacked(E8 as u8, WHITE, &pos.pieces) &&
+                    !is_square_attacked(F8 as u8, WHITE, &pos.pieces) {
+                    //BK castle move
+                }
+            }
+        }
+        if pos.castle_perm & BQ_CASTLE != 0 {
+            if pos.pieces[D8] == EMPTY && pos.pieces[C8] == EMPTY && pos.pieces[B8] == EMPTY {
+                if !is_square_attacked(D8 as u8, WHITE, &pos.pieces) &&
+                    !is_square_attacked(C8 as u8, WHITE, &pos.pieces) &&
+                    !is_square_attacked(B8 as u8, WHITE, &pos.pieces) {
+                    //WQ castle move
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]

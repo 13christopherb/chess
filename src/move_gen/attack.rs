@@ -1,4 +1,5 @@
-use crate::constants::{pieces, squares};
+use crate::Board;
+use crate::constants::{pieces, sqs};
 
 const KN_DIR:[i8; 8] = [ -8, -19, -21, -12, 8, 19, 21, 12]; // Knight attack direction
 const RK_DIR:[i8; 4] = [ -1, -10, 1, 10]; // Rook attack direction
@@ -20,7 +21,7 @@ fn is_pawn_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
 fn is_knight_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
     for dir in KN_DIR {
         let pce = pces[(sq as i8 + dir) as usize];
-        if pce != squares::OFFBOARD && pieces::is_knight(pce) && pieces::is_same_color(pce, side) {
+        if pce != sqs::OFFBOARD && pieces::is_knight(pce) && pieces::is_same_color(pce, side) {
             return true
         }
     }
@@ -32,7 +33,7 @@ fn is_rook_or_queen_attacking(sq:u8, side:u8, pces:&[u8;120]) -> bool {
     for dir in RK_DIR {
         let mut dir_sq = sq as i8 + dir;
         let mut pce = pces[dir_sq as usize];
-        while pce != squares::OFFBOARD {
+        while pce != sqs::OFFBOARD {
             if pce != pieces::EMPTY {
                 if pieces::is_rook_or_queen(pce) && pieces::is_same_color(pce, side) {
                     return true;
@@ -50,7 +51,7 @@ fn is_bishop_or_queen_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
     for dir in BI_DIR {
         let mut dir_sq = sq as i8 + dir;
         let mut pce = pces[dir_sq as usize];
-        while pce != squares::OFFBOARD {
+        while pce != sqs::OFFBOARD {
             if pce != pieces::EMPTY {
                 if pieces::is_bishop_or_queen(pce) && pieces::is_same_color(pce, side) {
                     return true;
@@ -89,7 +90,7 @@ fn is_king_attacking(sq:u8, side:u8, pces:&[u8;120]) -> bool {
 /// ```is_square_attacked(86, pieces::WHITE, &board.pieces)
 ///
 /// ```
-pub fn is_square_attacked(sq:u8, side:u8, pces:&[u8; 120]) -> bool  {
+pub fn is_square_attacked(sq:u8, side:u8, pces: &[u8; 120]) -> bool  {
     if is_pawn_attacking(sq, side, pces) {
         return true;
     } else if is_knight_attacking(sq, side, pces) {
@@ -125,7 +126,7 @@ mod test {
         }
 
         for i in 0..120 {
-            pces[i] = squares::OFFBOARD;
+            pces[i] = sqs::OFFBOARD;
         }
         for i in 0..64 {
             pces[usize::try_from(sq64_to_sq120[i]).unwrap()] = pieces::EMPTY;

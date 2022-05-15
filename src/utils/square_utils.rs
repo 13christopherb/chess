@@ -1,4 +1,4 @@
-use crate::constants::{files, ranks, squares};
+use crate::constants::{files, ranks, sqs};
 
 pub fn fr2sq(file: u8, rank: u8) -> u8 {
     (21 + file) + (rank * 10)
@@ -11,8 +11,8 @@ pub fn init_file_rank_arrays() -> ([u8; 120], [u8; 120]) {
     let mut ranks: [u8; 120] = [0; 120];
 
     for i in 0..120 {
-        files[i] = squares::OFFBOARD;
-        ranks[i] = squares::OFFBOARD;
+        files[i] = sqs::OFFBOARD;
+        ranks[i] = sqs::OFFBOARD;
     }
 
     for rank in ranks::RANK_1..=ranks::RANK_8 {
