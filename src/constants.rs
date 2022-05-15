@@ -55,9 +55,32 @@ pub mod pieces {
     pub const BIG_PIECE:[bool; 13] = [ false, false, true, true, true, true, true, false, true, true, true, true, true ];
     pub const MAJOR_PIECE:[bool; 13] = [ false, false, false, false, true, true, true, false, false, false, true, true, true ];
     pub const MINOR_PIECE:[bool; 13] = [ false, false, true, true, false, false, false, false, true, true, false, false, false ];
+    pub const SLIDES:[bool; 13] = [false, false, false, true, true, true, false, false, false, true, true, true, false];
+    pub const LOOP_SLIDE:[u8; 8] = [WB, WR, WQ, 0, BB, BR, BQ, 0];
+    pub const LOOP_SLIDE_INDEX:[u8; 2] = [0, 4];
+    pub const LOOP_NONSLIDE:[u8; 6] = [WN, WK, 0, BN, BK, 0];
+    pub const LOOP_NONSLIDE_INDEX:[u8; 2] = [0, 3];
     pub const VALUE:[u32; 13] = [0, 100, 325, 325,  550, 1000, 50000, 100, 325, 325, 550, 1000, 50000];
     pub const PIECE_COLOR:[u8; 13] = [BOTH, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
         BLACK, BLACK, BLACK, BLACK, BLACK, BLACK];
+
+    pub const PIECE_DIR:[[i32; 8]; 13] = [
+        [ 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ 0, 0, 0, 0, 0, 0, 0, 0 ],
+        [ -8, -19, -21, -12, 8, 19, 21, 12 ],
+        [-9, -11, 11, 9, 0, 0, 0, 0 ],
+        [-1, -10, 1, 10, 0, 0, 0, 0 ],
+        [-1, -10, 1, 10, -9, -11, 11, 9],
+        [-1, -10, 1, 10, -9, -11, 11, 9],
+        [ 0, 0, 0, 0, 0, 0, 0, 0],
+        [-8, -19, -21, -12, 8, 19, 21, 12],
+        [-9, 11, 11, 9, 0, 0, 0, 0],
+        [-1, -10, 1, 10, 0, 0, 0, 0],
+        [-1, 10, 1, 10, -9, -11, 11, 9],
+        [-1, -10, 1, 10, -9, -11, 11, 9]
+    ];
+
+    pub const NUM_DIR:[usize; 13] = [0, 0, 8, 4, 4, 8, 8, 0, 8, 4, 4, 8, 8];
 
     #[inline(always)]
     pub fn is_same_color(pce:u8, color:u8) -> bool { PIECE_COLOR[pce as usize] == color }
@@ -173,5 +196,5 @@ pub mod squares {
     pub const OFFBOARD:u8 = 100;
 
     #[inline(always)]
-    pub fn is_sq_on_board(sq:u8,) -> bool { FILE_SQUARES[sq as usize] != OFFBOARD }
+    pub fn is_sq_on_board(sq:i32) -> bool { FILE_SQUARES[sq as usize] != OFFBOARD }
 }

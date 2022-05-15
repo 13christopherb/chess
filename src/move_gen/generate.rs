@@ -98,10 +98,10 @@ fn generate_wp_moves(pos:&Board, list:&mut Vec<GameMove>) {
             }
         }
 
-        if is_sq_on_board(sq) && pieces::is_black(pos.pieces[sqi + 9]) {
+        if is_sq_on_board(sq as i32) && pieces::is_black(pos.pieces[sqi + 9]) {
             add_wp_capture_move(pos, sq, sq + 9, pos.pieces[sqi + 9], list);
         }
-        if is_sq_on_board(sq) && pieces::is_black(pos.pieces[sqi + 11]) {
+        if is_sq_on_board(sq as i32) && pieces::is_black(pos.pieces[sqi + 11]) {
             add_wp_capture_move(pos, sq, sq + 11, pos.pieces[sqi + 11], list);
         }
 
@@ -156,10 +156,10 @@ fn generate_bp_moves(pos:&Board, list:&mut Vec<GameMove>) {
             }
         }
 
-        if is_sq_on_board(sq) && pieces::is_white(pos.pieces[sqi - 9]) {
+        if is_sq_on_board(sq as i32) && pieces::is_white(pos.pieces[sqi - 9]) {
             add_bp_capture_move(pos, sq, sq - 9, pos.pieces[sqi - 9], list);
         }
-        if is_sq_on_board(sq) && pieces::is_white(pos.pieces[sqi - 11]) {
+        if is_sq_on_board(sq as i32) && pieces::is_white(pos.pieces[sqi - 11]) {
             add_bp_capture_move(pos, sq, sq - 11, pos.pieces[sqi - 11], list);
         }
 
@@ -177,6 +177,47 @@ fn generate_bp_moves(pos:&Board, list:&mut Vec<GameMove>) {
                                                 pieces::EMPTY,
                                                 MFLAG_EP), list);
         }
+    }
+}
+
+#[inline(always)]
+fn generate_sliding_moves(pos:&Board, list:&mut Vec<GameMove>, side:u8) {
+    let mut piece_idx = pieces::LOOP_SLIDE_INDEX[side as usize] as usize;
+    let mut piece = pieces::LOOP_SLIDE[piece_idx];
+
+    while piece != 0 {
+        piece_idx += 1;
+        piece = pieces::LOOP_SLIDE[piece_idx];
+    }
+}
+
+#[inline(always)]
+fn generate_nonsliding_moves(pos:&Board, list:&mut Vec<GameMove>, side:u8) {
+    let mut piece_idx = pieces::LOOP_NONSLIDE_INDEX[side as usize] as usize;
+    let mut piece = pieces::LOOP_NONSLIDE[piece_idx] as usize;
+
+    while piece != 0 {
+        for i in 0..pos.num_pieces[piece as usize] as usize {
+            let sq = pos.piece_list[piece][i] as i32;
+
+            for j in 0..pieces::NUM_DIR[piece] {
+                let dir = pieces::PIECE_DIR[piece][j];
+                let t_sq = sq + dir;
+                if !is_sq_on_board(t_sq) {
+                    continue;
+                }
+                let t_sq = t_sq as usize;
+
+                if pos.pieces[t_sq] != pieces::EMPTY {
+                    if pieces::PIECE_COLOR[pos.pieces[t_sq] as usize] == side ^ 1 {
+                        //Capture
+                    }
+                    continue;
+                }
+            }
+        }
+        piece = pieces::LOOP_NONSLIDE[piece_idx] as usize;
+        piece_idx += 1;
     }
 }
 

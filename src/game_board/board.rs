@@ -104,6 +104,7 @@ impl Board {
             self.num_big_pieces[i] = 0;
             self.num_major_pieces[i] = 0;
             self.num_minor_pieces[i] = 0;
+            self.material[i] = 0;
             self.pawns[i] = BitBoard::new(0);
         }
 
