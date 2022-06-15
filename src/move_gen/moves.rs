@@ -10,6 +10,10 @@
     0001 0000 0000 0000 0000 0000 0000 -> Castle 0x1000000
  */
 
+use crate::constants::files::FILE_SQUARES;
+use crate::constants::pieces::EMPTY;
+use crate::constants::ranks::RANK_SQUARES;
+
 pub const MFLAG_EP:u32 = 0x40000; // En passant
 pub const MFLAG_PS:u32 = 0x80000; // Pawn start
 pub const MFLAG_CA:u32 = 0x1000000; // Castle
@@ -23,7 +27,6 @@ pub struct GameMove {
 }
 
 impl GameMove {
-
     #[inline(always)]
     pub fn new(from:u8, to:u8, cap:u8,
                prom:u8, flag:u32) -> GameMove {
@@ -47,4 +50,37 @@ impl GameMove {
 
     #[inline(always)]
     pub fn pawn_start(&self) -> bool { (self.move_int & MFLAG_PS) > 0}
+}
+
+/// Prints the board
+impl std::fmt::Display for GameMove {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        const FILES:[&str; 8] = ["A", "B", "C", "D","E", "F", "G", "H"];
+        const RANKS:[&str; 8] = ["1", "2", "3", "4","5", "6", "7", "8"];
+
+        let mut output = String::from("");
+
+        let start_file = FILES[FILE_SQUARES[self.origin() as usize] as usize];
+        let start_rank = RANKS[RANK_SQUARES[self.origin() as usize] as usize];
+
+        let end_file = FILES[FILE_SQUARES[self.destination() as usize] as usize];
+        let end_rank = RANKS[RANK_SQUARES[self.destination() as usize] as usize];
+
+        let capture = if self.capture() != EMPTY {true} else {false};
+
+        let mut output = String::from("");
+
+        output.push_str(start_file);
+        output.push_str(start_rank);
+        output.push_str(if capture {"x"} else {" "});
+        output.push_str(end_file);
+        output.push_str(end_rank);
+        write!(f, "{}", output)
+    }
+}
+
+impl PartialEq for GameMove {
+    fn eq(&self, other: &Self) -> bool {
+        self.move_int == other.move_int
+    }
 }

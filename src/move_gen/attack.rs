@@ -1,5 +1,6 @@
 use crate::Board;
 use crate::constants::{pieces, sqs};
+use crate::constants::sqs::OFFBOARD;
 
 const KN_DIR:[i8; 8] = [ -8, -19, -21, -12, 8, 19, 21, 12]; // Knight attack direction
 const RK_DIR:[i8; 4] = [ -1, -10, 1, 10]; // Rook attack direction
@@ -68,6 +69,7 @@ fn is_bishop_or_queen_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
 fn is_king_attacking(sq:u8, side:u8, pces:&[u8;120]) -> bool {
     for dir in KI_DIR {
         let pce = pces[(sq as i8 + dir) as usize];
+        if pce == OFFBOARD { break; }
         if pieces::is_king(pce) && pieces::is_same_color(pce, side) {
             return true;
         }
