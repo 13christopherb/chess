@@ -19,7 +19,7 @@ pub struct PastMove {
 #[derive(Debug, Clone)]
 pub struct Board {
     pub pieces: [u8; 120],
-    pub pawns: [BitBoard; 3],
+    pub bitboards: [BitBoard; 3],
     pub king_sq: [u8; 2],
     fifty_move: u64,
     pub side: u8,
@@ -67,7 +67,7 @@ impl Board {
 
         Board {
             pieces: [0; 120],
-            pawns: [BitBoard::new(0); 3],
+            bitboards: [BitBoard::new(0); 3],
             king_sq: [0; 2],
             fifty_move: 0,
             side: 0,
@@ -105,7 +105,11 @@ impl Board {
             self.num_major_pieces[i] = 0;
             self.num_minor_pieces[i] = 0;
             self.material[i] = 0;
-            self.pawns[i] = BitBoard::new(0);
+            self.bitboards[i] = BitBoard::new(0);
+        }
+
+        for i in 0..3 {
+            self.bitboards[i].reset();
         }
 
         for i in 0..13 {
@@ -149,8 +153,8 @@ impl Board {
                 if piece == pieces::WK || piece == pieces::BK { self.king_sq[color] = sq; }
 
                 if piece == pieces::WP || piece == pieces::BP {
-                    self.pawns[color].set_bit(self.sq120_to_sq64[sq as usize]);
-                    self.pawns[pieces::BOTH as usize].set_bit(self.sq120_to_sq64[sq as usize]);
+                    self.bitboards[color].set_bit(self.sq120_to_sq64[sq as usize]);
+                    self.bitboards[pieces::BOTH as usize].set_bit(self.sq120_to_sq64[sq as usize]);
                 }
             }
         }
@@ -296,9 +300,9 @@ pub fn check_board(board:&Board) -> bool {
 
     let mut pawns = [BitBoard::new(0); 3];
 
-    pawns[pieces::WHITE_S] = board.pawns[pieces::WHITE_S];
-    pawns[pieces::BLACK_S] = board.pawns[pieces::BLACK_S];
-    pawns[pieces::BOTH_S] = board.pawns[pieces::BOTH_S];
+    pawns[pieces::WHITE_S] = board.bitboards[pieces::WHITE_S];
+    pawns[pieces::BLACK_S] = board.bitboards[pieces::BLACK_S];
+    pawns[pieces::BOTH_S] = board.bitboards[pieces::BOTH_S];
 
     // check piece list
 
@@ -380,6 +384,8 @@ pub fn check_board(board:&Board) -> bool {
 mod test {
     use crate::Board;
     use crate::constants::{pieces, sqs};
+    use crate::constants::pieces::{BLACK_S, EMPTY, WHITE, WHITE_S};
+    use crate::constants::sqs::{NO_SQ, OFFBOARD};
     use crate::utils::square_utils::fr2sq;
 
     #[test]
@@ -428,6 +434,34 @@ mod test {
     }
 
     #[test]
+    fn test_reset_position() {
+        let start: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        let mut board = Board::new();
+        unsafe { board.parse_fen(start) };
+        board.update_material_list();
+        board.reset_position();
+
+        for piece in board.pieces {
+            assert!(piece == OFFBOARD || piece == EMPTY, "Did not reset all squares to offboard");
+        }
+
+        for bitboard in board.bitboards {
+            assert_eq!(bitboard.board, 0, "Did not reset bitboards to 0");
+        }
+
+        assert_eq!(board.king_sq[WHITE_S], 0, "Did not reset white king square");
+        assert_eq!(board.king_sq[BLACK_S], 0, "Did not reset white king square");
+
+        assert_eq!(board.fifty_move, 0, "Did not reset fifty moves");
+        assert_eq!(board.side, 2, "Did not reset side");
+        assert_eq!(board.en_passant, NO_SQ, "Did not reset en_passant");
+        assert_eq!(board.ply, 0, "Did not reset ply");
+        assert_eq!(board.castle_perm, 0, "Did not reset castle_perm");
+        //TODO: Finish
+    }
+
+    #[test]
     fn test_update_material_list() {
         const RANK_2: u64 = 0x0000_0000_0000_FF00;
         const RANK_7: u64 = 0x00FF_0000_0000_0000;
@@ -447,10 +481,9 @@ mod test {
         assert_eq!(board.material[0], 54200, "Did not correctly set material value for white");
         assert_eq!(board.material[1], 54200, "Did not correctly set material value for black");
         assert_eq!(board.piece_list[1][4], 35, "Did not correctly set square for white pawn");
-        assert_eq!(format!("{:b}",board.pawns[pieces::WHITE as usize].board), format!("{:b}", RANK_2), "Did not set white bitboard correctly");
-        assert_eq!(format!("{:b}",board.pawns[pieces::BLACK as usize].board), format!("{:b}", RANK_7), "Did not set black bitboard correctly");
-        assert_eq!(format!("{:b}",board.pawns[pieces::BOTH as usize].board), format!("{:b}", both_ranks), "Did not set both bitboard correctly");
-
+        assert_eq!(format!("{:b}",board.bitboards[pieces::WHITE as usize].board), format!("{:b}", RANK_2), "Did not set white bitboard correctly");
+        assert_eq!(format!("{:b}",board.bitboards[pieces::BLACK as usize].board), format!("{:b}", RANK_7), "Did not set black bitboard correctly");
+        assert_eq!(format!("{:b}",board.bitboards[pieces::BOTH as usize].board), format!("{:b}", both_ranks), "Did not set both bitboard correctly");
     }
 }
 

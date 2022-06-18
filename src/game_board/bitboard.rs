@@ -34,6 +34,9 @@ impl BitBoard {
     }
 
     #[inline(always)]
+    pub fn reset(&mut self) { self.board = 0; }
+
+    #[inline(always)]
     pub fn set_bit(&mut self, sq: u8) {
         self.board |= self.set_mask[sq as usize]
     }
@@ -85,6 +88,14 @@ impl std::fmt::Display for BitBoard {
 #[cfg(test)]
 mod test {
     use crate::game_board::bitboard::BitBoard;
+
+    #[test]
+    fn test_reset() {
+        let initial_bits: u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000000;
+        let mut board = BitBoard::new(initial_bits);
+        board.reset();
+        assert_eq!(board.board, 0, "Did not correctly reset board");
+    }
 
     #[test]
     fn test_set_bit() {
