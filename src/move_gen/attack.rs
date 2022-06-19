@@ -93,18 +93,9 @@ fn is_king_attacking(sq:u8, side:u8, pces:&[u8;120]) -> bool {
 ///
 /// ```
 pub fn is_square_attacked(sq:u8, side:u8, pces: &[u8; 120]) -> bool  {
-    if is_pawn_attacking(sq, side, pces) {
-        return true;
-    } else if is_knight_attacking(sq, side, pces) {
-        return true;
-    } else if is_rook_or_queen_attacking(sq, side, pces) {
-        return true;
-    } else if is_bishop_or_queen_attacking(sq, side, pces) {
-        return true;
-    } else if is_king_attacking(sq, side, pces) {
-        return true;
-    }
-    false
+    is_pawn_attacking(sq, side, pces) || is_knight_attacking(sq, side, pces) ||
+        is_rook_or_queen_attacking(sq, side, pces) || is_bishop_or_queen_attacking(sq, side, pces) ||
+        is_king_attacking(sq, side, pces)
 }
 
 #[cfg(test)]
