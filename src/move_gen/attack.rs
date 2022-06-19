@@ -48,6 +48,7 @@ fn is_rook_or_queen_attacking(sq:u8, side:u8, pces:&[u8;120]) -> bool {
     false
 }
 
+#[inline(always)]
 fn is_bishop_or_queen_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
     for dir in BI_DIR {
         let mut dir_sq = sq as i8 + dir;
@@ -66,6 +67,7 @@ fn is_bishop_or_queen_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
     false
 }
 
+#[inline(always)]
 fn is_king_attacking(sq:u8, side:u8, pces:&[u8;120]) -> bool {
     for dir in KI_DIR {
         let pce = pces[(sq as i8 + dir) as usize];
@@ -92,6 +94,7 @@ fn is_king_attacking(sq:u8, side:u8, pces:&[u8;120]) -> bool {
 /// ```is_square_attacked(86, pieces::WHITE, &board.pieces)
 ///
 /// ```
+#[inline(always)]
 pub fn is_square_attacked(sq:u8, side:u8, pces: &[u8; 120]) -> bool  {
     is_pawn_attacking(sq, side, pces) || is_knight_attacking(sq, side, pces) ||
         is_rook_or_queen_attacking(sq, side, pces) || is_bishop_or_queen_attacking(sq, side, pces) ||
