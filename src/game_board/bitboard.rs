@@ -3,7 +3,7 @@
 
 use crate::utils::bit_operations::bitscan_forward;
 use crate::Board;
-use crate::constants::{ranks, files};
+use crate::constants::{squares};
 use crate::utils::square_utils::fr2sq;
 
 #[derive(Debug, Copy, Clone)]
@@ -73,8 +73,8 @@ impl std::fmt::Display for BitBoard {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let board = Board::new();
         let mut output = String::from("");
-        for rank in ranks::RANK_1..ranks::RANK_NONE {
-            for file in files::FILE_A..files::FILE_NONE {
+        for rank in squares::RANK_1..squares::RANK_NONE {
+            for file in squares::FILE_A..squares::FILE_NONE {
                 let sq: u8 = board.sq120_to_sq64[fr2sq(file, rank) as usize];
                 output.push_str(if self.piece_is_present(sq) { "x " } else { "- " });
             }

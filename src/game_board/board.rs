@@ -1,5 +1,5 @@
 use crate::game_board::bitboard::BitBoard;
-use crate::constants::{castling, files, pieces, ranks, sqs};
+use crate::constants::{pieces, squares};
 use crate::utils::hashkeys::BoardHasher;
 use crate::utils::square_utils::fr2sq;
 
@@ -56,8 +56,8 @@ impl Board {
         let mut sq64_to_sq120: [u8; 64] = [120; 64];
 
         let mut sq64: usize = 0;
-        for rank in ranks::RANK_1..ranks::RANK_NONE {
-            for file in files::FILE_A..files::FILE_NONE {
+        for rank in squares::RANK_1..squares::RANK_NONE {
+            for file in squares::FILE_A..squares::FILE_NONE {
                 let sq: u8 = fr2sq(file, rank);
                 sq64_to_sq120[sq64] = sq;
                 sq120_to_sq64[sq as usize] = sq64 as u8;
@@ -94,7 +94,7 @@ impl Board {
     /// Resets the position to an empty board
     pub fn reset_position(&mut self) {
         for i in 0..120 {
-            self.pieces[i] = sqs::OFFBOARD;
+            self.pieces[i] = squares::OFFBOARD;
         }
         for i in 0..64 {
             self.pieces[usize::try_from(self.sq64_to_sq120[i]).unwrap()] = pieces::EMPTY;
@@ -105,7 +105,6 @@ impl Board {
             self.num_major_pieces[i] = 0;
             self.num_minor_pieces[i] = 0;
             self.material[i] = 0;
-            self.bitboards[i] = BitBoard::new(0);
         }
 
         for i in 0..3 {
@@ -120,7 +119,7 @@ impl Board {
         self.king_sq[1] = 0;
 
         self.side = 2;
-        self.en_passant = sqs::NO_SQ;
+        self.en_passant = squares::NO_SQ;
         self.fifty_move = 0;
 
         self.ply = 0;
@@ -138,7 +137,7 @@ impl Board {
             sq = i as u8;
             let piece = self.pieces[i];
             let color: usize;
-            if piece != sqs::OFFBOARD && piece != pieces::EMPTY {
+            if piece != squares::OFFBOARD && piece != pieces::EMPTY {
                 color = pieces::PIECE_COLOR[piece as usize] as usize;
 
                 if pieces::BIG_PIECE[piece as usize] { self.num_big_pieces[color] += 1; }
@@ -165,8 +164,8 @@ impl Board {
     /// # Panic
     /// Should panic if the string is not a valid FEN
     pub unsafe fn parse_fen(&mut self, fen: &str) {
-        let mut rank: i32 = ranks::RANK_8 as i32;
-        let mut file: i32 = files::FILE_A as i32;
+        let mut rank: i32 = squares::RANK_8 as i32;
+        let mut file: i32 = squares::FILE_A as i32;
 
         let mut piece: u8;
         let mut count: u32;
@@ -201,7 +200,7 @@ impl Board {
                 },
                 '/' | ' ' => {
                     rank -= 1;
-                    file = files::FILE_A as i32;
+                    file = squares::FILE_A as i32;
                     c = c.add(1);
                     continue;
                 },
@@ -232,10 +231,10 @@ impl Board {
             if *c as char == ' ' { break; }
 
             match *c as char {
-                'K' => self.castle_perm |= castling::WK_CASTLE,
-                'Q' => self.castle_perm |= castling::WQ_CASTLE,
-                'k' => self.castle_perm |= castling::BK_CASTLE,
-                'q' => self.castle_perm |= castling::BQ_CASTLE,
+                'K' => self.castle_perm |= pieces::WK_CASTLE,
+                'Q' => self.castle_perm |= pieces::WQ_CASTLE,
+                'k' => self.castle_perm |= pieces::BK_CASTLE,
+                'q' => self.castle_perm |= pieces::BQ_CASTLE,
                 _ => break,
             }
             c = c.add(1);
@@ -275,8 +274,8 @@ impl std::fmt::Display for Board {
         const RANK_CHARS:[char; 8] = ['1','2','3','4','5','6','7','8'];
         const FILE_CHARS:[char; 8] = ['a','b','c','d','e','f','g','h'];
         let mut output = String::from("");
-        for rank in (ranks::RANK_1..=ranks::RANK_8).rev() {
-            for file in files::FILE_A..files::FILE_H + 1 {
+        for rank in (squares::RANK_1..=squares::RANK_8).rev() {
+            for file in squares::FILE_A..squares::FILE_H + 1 {
                 let sq = fr2sq(file, rank);
                 let piece = self.pieces[sq as usize];
                 output.push_str(PIECE_CHARS[piece as usize]);
@@ -370,9 +369,9 @@ pub fn check_board(board:&Board) -> bool {
     assert!(board.side == pieces::WHITE || board.side == pieces::BLACK);
 
     // assert!(board.en_passant == squares::NO_SQ ||
-    //     ( board.ranks_squares[board.en_passant as usize] == ranks::RANK_6 &&
+    //     ( board.ranks_squares[board.en_passant as usize] == squares::RANK_6 &&
     //         board.side == pieces::WHITE) ||
-    //     (board.ranks_squares[board.en_passant as usize] == ranks::RANK_3 &&
+    //     (board.ranks_squares[board.en_passant as usize] == squares::RANK_3 &&
     //         board.side == pieces::BLACK));
 
     assert_eq!(board.pieces[board.king_sq[pieces::WHITE_S] as usize], pieces::WK);
@@ -383,9 +382,9 @@ pub fn check_board(board:&Board) -> bool {
 #[cfg(test)]
 mod test {
     use crate::Board;
-    use crate::constants::{pieces, sqs};
+    use crate::constants::{pieces, squares};
     use crate::constants::pieces::{BLACK_S, EMPTY, WHITE, WHITE_S};
-    use crate::constants::sqs::{NO_SQ, OFFBOARD};
+    use crate::constants::squares::{NO_SQ, OFFBOARD};
     use crate::utils::square_utils::fr2sq;
 
     #[test]
@@ -424,11 +423,11 @@ mod test {
         let mut board = Board::new();
         unsafe { board.parse_fen(start) };
         assert_eq!(board.pieces[23], pieces::WB as u8, "Did not correctly place white bishop on F1");
-        assert_eq!(board.pieces[sqs::F3 as usize], pieces::WN as u8, "Did not correctly place white knight on F3");
-        assert_eq!(board.pieces[0], sqs::OFFBOARD, "Did not preserve offboard values");
+        assert_eq!(board.pieces[squares::F3 as usize], pieces::WN as u8, "Did not correctly place white knight on F3");
+        assert_eq!(board.pieces[0], squares::OFFBOARD, "Did not preserve offboard values");
         assert_eq!(board.side, 1, "Did not correctly set it as black's move");
         assert_eq!(board.castle_perm, 7, "Did not correctly set castling permission");
-        assert_eq!(board.en_passant, sqs::E3 as u8, "Did not correctly set en passant square");
+        assert_eq!(board.en_passant, squares::E3 as u8, "Did not correctly set en passant square");
         //assert_eq!(board.)
         //assert_eq!(board.pawns[0].board, white_pawn_bb, "Did not correctly set position of white pawn bitboard");
     }

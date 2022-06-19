@@ -10,9 +10,8 @@
     0001 0000 0000 0000 0000 0000 0000 -> Castle 0x1000000
  */
 
-use crate::constants::files::FILE_SQUARES;
+use crate::constants::squares::{FILE_SQUARES,RANK_SQUARES};
 use crate::constants::pieces::EMPTY;
-use crate::constants::ranks::RANK_SQUARES;
 
 pub const MFLAG_EP:u32 = 0x40000; // En passant
 pub const MFLAG_PS:u32 = 0x80000; // Pawn start
