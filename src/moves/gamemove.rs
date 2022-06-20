@@ -65,7 +65,7 @@ impl std::fmt::Display for GameMove {
         let end_file = FILES[FILE_SQUARES[self.destination() as usize] as usize];
         let end_rank = RANKS[RANK_SQUARES[self.destination() as usize] as usize];
 
-        let capture = if self.capture() != EMPTY {true} else {false};
+        let capture = self.capture() != EMPTY;
 
         let mut output = String::from("");
 

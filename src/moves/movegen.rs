@@ -6,27 +6,14 @@ use crate::{Board, check_board};
 
 const MAX_POSITION_MOVES: u32 = 256;
 
-#[inline(always)]
-pub fn is_pawn_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
-    let is_attacked;
-    if side == pieces::WHITE {
-        is_attacked = pces[(sq - 11) as usize] == pieces::WP || pces[(sq - 9) as usize] == pieces::WP;
-    } else {
-        is_attacked = pces[(sq+  11) as usize] == pieces::BP || pces[(sq + 9) as usize] == pieces::BP;
-    }
-    is_attacked
-}
-
-
-#[inline(always)]
-pub fn sliding_piece_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
+pub fn sliding_piece_attacking(sq: u8, side: u8, pces: &[u8; 120]) -> bool {
     let mut piece = LOOP_SLIDE[LOOP_SLIDE_INDEX[side as usize]];
     let mut piece_s = piece as usize;
     while !is_queen(piece) { // Bishop and rook directions cover queen directions, so no need to check queen by itself
         for i in 0..NUM_DIR[piece_s] {
             let dir = PIECE_DIR[piece_s][i];
 
-            let mut t_sq:u8 = sq.wrapping_add(dir as u8);
+            let mut t_sq: u8 = sq.wrapping_add(dir as u8);
 
             while is_sq_on_board(t_sq as i32) {
                 let pce = pces[t_sq as usize];
@@ -61,23 +48,22 @@ pub fn sliding_piece_attacking(sq:u8, side:u8, pces:&[u8; 120]) -> bool {
 /// ```is_square_attacked(86, pieces::WHITE, &board.pieces)
 ///
 /// ```
-#[inline(always)]
-pub fn is_square_attacked(sq:u8, side:u8, pces: &[u8; 120]) -> bool  {
+pub fn square_is_attacked(sq: u8, side: u8, pces: &[u8; 120]) -> bool {
     // Pawns
     if side == pieces::WHITE {
         if pces[(sq - 11) as usize] == pieces::WP || pces[(sq - 9) as usize] == pieces::WP {
             return true;
         }
     } else {
-        if pces[(sq+  11) as usize] == pieces::BP || pces[(sq + 9) as usize] == pieces::BP {
+        if pces[(sq + 11) as usize] == pieces::BP || pces[(sq + 9) as usize] == pieces::BP {
             return true;
         }
     }
     // Knights
-    for dir in PIECE_DIR[WN as usize]{ // Color doesn't matter
+    for dir in PIECE_DIR[WN as usize] { // Color doesn't matter
         let pce = pces[(sq.wrapping_add(dir as u8)) as usize];
         if pce != OFFBOARD && is_knight(pce) && is_same_color(pce, side) {
-            return true
+            return true;
         }
     }
 
@@ -94,8 +80,23 @@ pub fn is_square_attacked(sq:u8, side:u8, pces: &[u8; 120]) -> bool  {
             return true;
         }
     }
-
     false
+}
+
+#[inline]
+fn squares_are_attacked(squares: &[usize], side: u8, pces: &[u8; 120]) -> bool {
+    for sq in squares {
+        if square_is_attacked(*sq as u8, side, pces) { return true; }
+    }
+    false
+}
+
+#[inline]
+fn squares_are_empty(squares: &[usize], pces: &[u8; 120]) -> bool {
+    for sq in squares {
+        if pces[*sq] != EMPTY { return false; }
+    }
+    true
 }
 
 #[inline(always)]
@@ -108,7 +109,6 @@ fn add_capture_move(pos: &Board, mve: GameMove, list: &mut Vec<GameMove>) {
     list.push(mve);
 }
 
-#[inline(always)]
 fn add_wp_capture_move(pos: &Board, from: u8, to: u8, cap: u8, list: &mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == RANK_7 {
         add_capture_move(pos, GameMove::new(from, to, cap, WQ, 0), list);
@@ -120,7 +120,6 @@ fn add_wp_capture_move(pos: &Board, from: u8, to: u8, cap: u8, list: &mut Vec<Ga
     }
 }
 
-#[inline(always)]
 fn add_wp_move(pos: &Board, from: u8, to: u8, list: &mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == RANK_7 {
         add_quiet_move(pos, GameMove::new(from, to, EMPTY, WQ, 0), list);
@@ -132,7 +131,6 @@ fn add_wp_move(pos: &Board, from: u8, to: u8, list: &mut Vec<GameMove>) {
     }
 }
 
-#[inline(always)]
 fn add_bp_capture_move(pos: &Board, from: u8, to: u8, cap: u8, list: &mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == RANK_2 {
         add_capture_move(pos, GameMove::new(from, to, cap, BQ, 0), list);
@@ -144,7 +142,6 @@ fn add_bp_capture_move(pos: &Board, from: u8, to: u8, cap: u8, list: &mut Vec<Ga
     }
 }
 
-#[inline(always)]
 fn add_bp_move(pos: &Board, from: u8, to: u8, list: &mut Vec<GameMove>) {
     if RANK_SQUARES[from as usize] == RANK_2 {
         add_quiet_move(pos, GameMove::new(from, to, EMPTY, BQ, 0), list);
@@ -166,7 +163,6 @@ fn add_bp_move(pos: &Board, from: u8, to: u8, list: &mut Vec<GameMove>) {
 /// returns: ()
 ///
 
-#[inline(always)]
 fn generate_wp_moves(pos: &Board, list: &mut Vec<GameMove>) {
     let mut sq;
     let mut sqi: usize;
@@ -214,7 +210,6 @@ fn generate_wp_moves(pos: &Board, list: &mut Vec<GameMove>) {
 ///
 /// returns: ()
 ///
-
 #[inline(always)]
 fn generate_bp_moves(pos: &Board, list: &mut Vec<GameMove>) {
     let mut sq;
@@ -265,7 +260,6 @@ fn generate_bp_moves(pos: &Board, list: &mut Vec<GameMove>) {
 ///
 /// returns: ()
 ///
-
 #[inline(always)]
 fn generate_sliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
     let mut piece_idx = LOOP_SLIDE_INDEX[side as usize]; // Start at different points in loop array depending on color
@@ -354,39 +348,29 @@ fn generate_nonsliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
     }
 }
 
+#[inline(always)]
+fn generate_castle_move(pos: &Board, side: u8, sqs: &[usize], from: u8, to: u8, list: &mut Vec<GameMove>) {
+    if !sqs.iter().any(|x| pos.pieces[*x] != EMPTY) && !sqs.iter().any(|x| square_is_attacked(*x as u8, side, &pos.pieces)) {
+        add_quiet_move(
+            pos,
+            GameMove::new(from, to, EMPTY, EMPTY, MFLAG_CA),
+            list,
+        );
+    }
+}
+
 fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
     assert!(check_board(pos));
 
     if pos.side == WHITE {
         generate_wp_moves(pos, list); // Pawns have a lot of special rules for movement, best to write specific functions
 
-        if pos.castle_perm & WK_CASTLE != 0 { // White king castling
-            if pos.pieces[F1] == EMPTY && pos.pieces[G1] == EMPTY {
-                if !is_square_attacked(E1 as u8, BLACK, &pos.pieces)
-                    && !is_square_attacked(F1 as u8, BLACK, &pos.pieces)
-                {
-                    add_quiet_move(
-                        pos,
-                        GameMove::new(E1 as u8, G1 as u8, EMPTY, EMPTY, MFLAG_CA),
-                        list,
-                    );
-                }
-            }
+        if pos.castle_perm & WK_CASTLE != 0 {
+            generate_castle_move(&pos, BLACK, &vec!(F1, G1), E1 as u8, G1 as u8, list);
         }
 
-        if pos.castle_perm & WQ_CASTLE != 0 { // White queen castling
-            if pos.pieces[D1] == EMPTY && pos.pieces[C1] == EMPTY && pos.pieces[B1] == EMPTY {
-                if !is_square_attacked(D1 as u8, BLACK, &pos.pieces)
-                    && !is_square_attacked(C1 as u8, BLACK, &pos.pieces)
-                    && !is_square_attacked(B1 as u8, BLACK, &pos.pieces)
-                {
-                    add_quiet_move(
-                        pos,
-                        GameMove::new(E1 as u8, C1 as u8, EMPTY, EMPTY, MFLAG_CA),
-                        list,
-                    );
-                }
-            }
+        if pos.castle_perm & WQ_CASTLE != 0 {
+            generate_castle_move(&pos, BLACK, &vec!(D1, C1, B1), E1 as u8, C1 as u8, list);
         }
 
         generate_sliding_moves(pos, list, WHITE);
@@ -394,34 +378,14 @@ fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
     } else {
         generate_bp_moves(pos, list);
 
-        if pos.castle_perm & BK_CASTLE != 0 {         // Black king castling
-            if pos.pieces[F8] == EMPTY && pos.pieces[G8] == EMPTY {
-                if !is_square_attacked(E8 as u8, WHITE, &pos.pieces)
-                    && !is_square_attacked(F8 as u8, WHITE, &pos.pieces)
-                {
-                    add_quiet_move(
-                        pos,
-                        GameMove::new(E8 as u8, G8 as u8, EMPTY, EMPTY, MFLAG_CA),
-                        list,
-                    );
-                }
-            }
+        if pos.castle_perm & BK_CASTLE != 0 {
+            generate_castle_move(&pos, WHITE, &vec!(F8, G8), G1 as u8, G8 as u8, list);
         }
 
-        if pos.castle_perm & BQ_CASTLE != 0 {   // Black queen castling
-            if pos.pieces[D8] == EMPTY && pos.pieces[C8] == EMPTY && pos.pieces[B8] == EMPTY {
-                if !is_square_attacked(D8 as u8, WHITE, &pos.pieces)
-                    && !is_square_attacked(C8 as u8, WHITE, &pos.pieces)
-                    && !is_square_attacked(B8 as u8, WHITE, &pos.pieces)
-                {
-                    add_quiet_move(
-                        pos,
-                        GameMove::new(E8 as u8, C8 as u8, EMPTY, EMPTY, MFLAG_CA),
-                        list,
-                    );
-                }
-            }
+        if pos.castle_perm & BQ_CASTLE != 0 {
+            generate_castle_move(&pos, WHITE, &vec!(D8, C8, B8), E8 as u8, C8 as u8, list);
         }
+
         generate_sliding_moves(pos, list, BLACK);
         generate_nonsliding_moves(pos, list, BLACK);
     }
@@ -645,7 +609,7 @@ mod test {
     }
 
     fn init_pces() -> [u8; 120] {
-        let mut pces:[u8; 120] = [0; 120];
+        let mut pces: [u8; 120] = [0; 120];
 
         let mut sq64_to_sq120: [u8; 64] = [120; 64];
 
@@ -680,128 +644,137 @@ mod test {
     #[test]
     fn test_with_pawn_attacking() {
         let pces = init_pces();
-        assert_eq!(is_square_attacked(fr2sq(FILE_C, RANK_3), pieces::WHITE, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_C, RANK_3), pieces::WHITE, &pces),
                    true, "Did not correctly find that pawn was attacking a square");
     }
+
     #[test]
     fn test_without_pawn_attacking() {
         let pces = init_pces();
-        assert_eq!(is_square_attacked(fr2sq(FILE_B, RANK_5), pieces::WHITE, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_B, RANK_5), pieces::WHITE, &pces),
                    false, "Incorrectly found that a pawn attacking when the pawn was too far away");
     }
+
     #[test]
     fn test_with_knight_attacking() {
         let pces = init_pces();
-        assert_eq!(is_square_attacked(fr2sq(FILE_B, RANK_3), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_B, RANK_3), pieces::BLACK, &pces),
                    true, "Did not correctly find that a knight was attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_D, RANK_3), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_D, RANK_3), pieces::BLACK, &pces),
                    true, "Did not correctly find that a knight was attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_E, RANK_2), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_E, RANK_2), pieces::BLACK, &pces),
                    true, "Did not correctly find that a knight was attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_A, RANK_2), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_A, RANK_2), pieces::BLACK, &pces),
                    true, "Did not correctly find that a knight was attacking a square");
     }
+
     #[test]
     fn test_without_knight_attacking() {
         let pces = init_pces();
-        assert_eq!(is_square_attacked(fr2sq(FILE_C, RANK_3), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_C, RANK_3), pieces::BLACK, &pces),
                    false, "Incorrectly found a knight was attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_C, RANK_4), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_C, RANK_4), pieces::BLACK, &pces),
                    false, "Incorrectly find that a knight was attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_F, RANK_2), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_F, RANK_2), pieces::BLACK, &pces),
                    false, "Incorrectly find that a knight was attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_A, RANK_4), pieces::BLACK, &pces),
+        assert_eq!(square_is_attacked(fr2sq(FILE_A, RANK_4), pieces::BLACK, &pces),
                    false, "Incorrectly find that a knight was attacking a square");
     }
+
     #[test]
     fn test_with_bishop_attacking() {
         let pces = init_pces();
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_G, RANK_3),
-                                                pieces::WHITE, &pces), true,
+                                           pieces::WHITE, &pces), true,
                    "Incorrectly did not find a bishop was attacking a square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_F, RANK_4),
-                                                pieces::WHITE, &pces), true,
+                                           pieces::WHITE, &pces), true,
                    "Incorrectly did not find a bishop was attacking a square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_E, RANK_5),
-                                                pieces::WHITE, &pces), true,
+                                           pieces::WHITE, &pces), true,
                    "Incorrectly did not find a bishop was attacking a square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_D, RANK_6),
-                                                pieces::WHITE, &pces), true,
+                                           pieces::WHITE, &pces), true,
                    "Incorrectly did not find a bishop was attacking a square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_B, RANK_2),
-                                                pieces::BLACK, &pces), true,
+                                           pieces::BLACK, &pces), true,
                    "Incorrectly did not find a bishop was attacking a square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_B, RANK_8),
-                                                pieces::BLACK, &pces), true,
+                                           pieces::BLACK, &pces), true,
                    "Did not find queen attacking the diagonal square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_H, RANK_2),
-                                                pieces::BLACK, &pces), true,
+                                           pieces::BLACK, &pces), true,
                    "Did not find queen attacking the diagonal square");
     }
+
     #[test]
     fn test_without_bishop_attacking() {
         let mut pces = init_pces();
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_C, RANK_3),
-                                                pieces::BLACK, &pces), false,
+                                           pieces::BLACK, &pces), false,
                    "Incorrectly found the bishop attacking a square past a pawn");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_C, RANK_7),
-                                                pieces::WHITE, &pces), false,
+                                           pieces::WHITE, &pces), false,
                    "Incorrectly found a bishop attacking past a piece");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_B, RANK_8),
-                                                pieces::WHITE, &pces), false,
+                                           pieces::WHITE, &pces), false,
                    "Incorrectly found a bishop attacking past a piece");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_A, RANK_5),
                                            pieces::BLACK, &pces), false,
                    "Incorrectly found a bishop attacking in straight line");
     }
+
     #[test]
     fn test_with_rook_attacking() {
         let pces = init_pces();
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_A, RANK_6),
-                                              pieces::BLACK, &pces), true,
+                                           pieces::BLACK, &pces), true,
                    "Did not correctly find the rook attacking a square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_E, RANK_3),
-                                              pieces::BLACK, &pces), true,
+                                           pieces::BLACK, &pces), true,
                    "Did not correctly find the rook attacking a square");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_A, RANK_6),
-                                              pieces::BLACK, &pces), true,
+                                           pieces::BLACK, &pces), true,
                    "Did not correctly find the queen attacking a linear square");
     }
+
     #[test]
     fn test_without_rook_attacking() {
         let pces = init_pces();
 
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_G, RANK_8),
-                                              pieces::BLACK, &pces), false,
+                                           pieces::BLACK, &pces), false,
                    "Incorrectly found a square diagonal to rook being attacked");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_C, RANK_4),
                                            pieces::BLACK, &pces), false,
                    "Incorrectly found a square diagonal to rook being attacked");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_E, RANK_2),
-                                              pieces::BLACK, &pces), false,
+                                           pieces::BLACK, &pces), false,
                    "Incorrectly found a square being attacked by rook that's blocked by a piece");
         assert_eq!(sliding_piece_attacking(fr2sq(FILE_H, RANK_6),
-                                              pieces::BLACK, &pces), true,
+                                           pieces::BLACK, &pces), true,
                    "Incorrectly find the queen attacking past a piece");
     }
+
     #[test]
     fn test_with_king_attacking() {
         let pces = init_pces();
-        assert_eq!(is_square_attacked(fr2sq(FILE_E, RANK_4),
-                                     pieces::WHITE, &pces), true,
+        assert_eq!(square_is_attacked(fr2sq(FILE_E, RANK_4),
+                                      pieces::WHITE, &pces), true,
                    "Did not correctly find the king attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_F, RANK_7),
-                                     pieces::BLACK, &pces), true,
+        assert_eq!(square_is_attacked(fr2sq(FILE_F, RANK_7),
+                                      pieces::BLACK, &pces), true,
                    "Did not correctly find the king attacking a square");
     }
+
     #[test]
     fn test_without_king_attacking() {
         let pces = init_pces();
-        assert_eq!(is_square_attacked(fr2sq(FILE_D, RANK_5),
-                                     pieces::WHITE, &pces), false,
+        assert_eq!(square_is_attacked(fr2sq(FILE_D, RANK_5),
+                                      pieces::WHITE, &pces), false,
                    "incorrectly find the rook attacking a square");
-        assert_eq!(is_square_attacked(fr2sq(FILE_F, RANK_7),
-                                     pieces::WHITE, &pces), false,
+        assert_eq!(square_is_attacked(fr2sq(FILE_F, RANK_7),
+                                      pieces::WHITE, &pces), false,
                    "incorrectly find the king of the wrong color attacking a square");
     }
 }

@@ -280,7 +280,7 @@ impl std::fmt::Display for Board {
                 let piece = self.pieces[sq as usize];
                 output.push_str(PIECE_CHARS[piece as usize]);
             }
-            output.push_str("\n");
+            output.push('\n');
         }
         write!(f, "{}", output)
     }
@@ -327,9 +327,7 @@ pub fn check_board(board:&Board) -> bool {
             material[color] += pieces::VALUE[piece];
         }
     }
-    for piece in pieces::WP as usize..=pieces::BK as usize {
-        assert_eq!(num_pieces[piece] as u8, board.num_pieces[piece]);
-    }
+
     // check bitboards
 
     let mut pcount = pawns[pieces::WHITE_S].count_bits();

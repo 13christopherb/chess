@@ -16,15 +16,13 @@ impl BoardHasher {
 
         let mut rng = rand::thread_rng();
         let mut piece_keys: [[u64; 128]; 13] = [[0; 128]; 13];
-        for i in 0..12 {
-            for j in 0..120 {
-                piece_keys[i][j] = rng.gen();
-            }
+        for key in piece_keys.iter_mut().flat_map(|r| r.iter_mut()) {
+                *key = rng.gen();
         }
         let side_key: u64 = rng.gen();
         let mut castle_keys: [u64; 16] = [0; 16];
-        for i in 0..16 {
-            castle_keys[i] = rng.gen();
+        for key in castle_keys.iter_mut() {
+            *key = rng.gen();
         }
 
         BoardHasher {
@@ -40,7 +38,7 @@ impl BoardHasher {
 
         for piece in pieces {
             if piece != squares::OFFBOARD && piece != pieces::EMPTY {
-                assert!(piece >= pieces::WP && piece <= pieces::BK);
+                assert!((pieces::WP..=pieces::BK).contains(&piece));
                 final_key ^= self.piece_keys[piece as usize][sq];
             }
         }

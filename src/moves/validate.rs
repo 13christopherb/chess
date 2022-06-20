@@ -5,13 +5,16 @@ use crate::constants::squares::{*};
 fn is_side_valid(side:u8) -> bool { side == WHITE || side == BLACK }
 
 #[inline(always)]
-fn is_filerank_valid(fr: u8) -> bool { fr >= 0 && fr <= 7 }
+fn is_filerank_valid(fr: u8) -> bool {
+    // fr needs to be >= 0
+    fr <= 7
+}
 
 #[inline(always)]
-fn is_piece_valid(pce: u8) -> bool { pce >= EMPTY && pce <= BK }
+fn is_piece_valid(pce: u8) -> bool { pce <= BK }
 
 #[inline(always)]
-fn is_piece(pce: u8) -> bool { pce >= WP && pce <= BK }
+fn is_piece(pce: u8) -> bool { (WP..=BK).contains(&pce) }
 
 #[inline(always)]
 pub fn is_sq_on_board(sq:i32) -> bool { FILE_SQUARES[sq as usize] != OFFBOARD }
