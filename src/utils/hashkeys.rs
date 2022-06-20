@@ -5,9 +5,9 @@ use crate::constants::{pieces, squares};
 
 #[derive(Debug, Copy, Clone)]
 pub struct BoardHasher {
-    piece_keys: [[u64; 128]; 13],
-    side_key: u64,
-    castle_keys: [u64; 16],
+    pub piece_keys: [[u64; 128]; 13],
+    pub side_key: u64,
+    pub castle_keys: [u64; 16],
 }
 
 impl BoardHasher {

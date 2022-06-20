@@ -75,7 +75,7 @@ impl std::fmt::Display for BitBoard {
         let mut output = String::from("");
         for rank in squares::RANK_1..squares::RANK_NONE {
             for file in squares::FILE_A..squares::FILE_NONE {
-                let sq: u8 = board.sq120_to_sq64[fr2sq(file, rank) as usize];
+                let sq: u8 = board.sq64(fr2sq(file, rank));
                 output.push_str(if self.piece_is_present(sq) { "x " } else { "- " });
             }
             output.push('\n');

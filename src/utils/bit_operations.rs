@@ -16,7 +16,7 @@ static DEBRUIJ_TABLE: &[u8] = &[
 /// # Panic
 /// Will panic if parameter is empty
 pub fn bitscan_forward(bits:u64) -> u8 {
-    let mut lsb = bits ^ bits - 1;
+    let mut lsb = bits ^ (bits - 1);
     lsb = lsb.wrapping_mul(MULTIPLICATOR);
     lsb >>= 58;
     DEBRUIJ_TABLE[lsb as usize]

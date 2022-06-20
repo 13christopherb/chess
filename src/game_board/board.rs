@@ -1,5 +1,6 @@
 use crate::game_board::bitboard::BitBoard;
 use crate::constants::{pieces, squares};
+use crate::constants::pieces::EMPTY;
 use crate::utils::hashkeys::BoardHasher;
 use crate::utils::square_utils::fr2sq;
 
@@ -30,7 +31,7 @@ pub struct Board {
 
     pub castle_perm: u8, //Castle permission
 
-    hash_key: u64,
+    pos_key: u64,
 
     pub num_pieces: [u8; 13],
     pub num_big_pieces: [u8; 2],
@@ -75,7 +76,7 @@ impl Board {
             ply: 0,
             history_ply: 0,
             castle_perm: 0,
-            hash_key: 0,
+            pos_key: 0,
             num_pieces: [0; 13],
             num_big_pieces: [0; 2],
             num_major_pieces: [0; 2],
@@ -91,13 +92,39 @@ impl Board {
 }
 impl Board {
 
+    #[inline(always)]
+    pub fn sq64(&self, sq120:u8) -> u8 { self.sq120_to_sq64[sq120 as usize] }
+
+    #[inline(always)]
+    pub fn sq120(&self, sq64:u8) -> u8 { self.sq64_to_sq120[sq64 as usize] }
+
+    #[inline(always)]
+    pub fn hash_piece(&mut self, pce:u8, sq:u8) {
+        self.pos_key ^= self.hasher.piece_keys[pce as usize][sq as usize];
+    }
+
+    #[inline(always)]
+    pub fn hash_castle(&mut self) {
+        self.pos_key ^= self.hasher.castle_keys[self.castle_perm as usize];
+    }
+
+    #[inline(always)]
+    pub fn hash_side(&mut self) {
+        self.pos_key ^= self.hasher.side_key;
+    }
+
+    #[inline(always)]
+    pub fn hash_en_passant(&mut self) {
+        self.pos_key ^= self.hasher.piece_keys[EMPTY as usize][self.en_passant as usize];
+    }
+
     /// Resets the position to an empty board
     pub fn reset_position(&mut self) {
         for i in 0..120 {
             self.pieces[i] = squares::OFFBOARD;
         }
         for i in 0..64 {
-            self.pieces[usize::try_from(self.sq64_to_sq120[i]).unwrap()] = pieces::EMPTY;
+            self.pieces[usize::try_from(self.sq120(i)).unwrap()] = pieces::EMPTY;
         }
 
         for i in 0..2 {
@@ -127,7 +154,7 @@ impl Board {
 
         self.castle_perm = 0;
 
-        self.hash_key = 0;
+        self.pos_key = 0;
     }
 
     /// Updates the rest of the board's state with regards to pieces to match the current piece list
@@ -152,7 +179,7 @@ impl Board {
                 if piece == pieces::WK || piece == pieces::BK { self.king_sq[color] = sq; }
 
                 if piece == pieces::WP || piece == pieces::BP {
-                    self.bitboards[color].set_bit(self.sq120_to_sq64[sq as usize]);
+                    self.bitboards[color].set_bit(self.sq64(sq));
                     self.bitboards[pieces::BOTH as usize].set_bit(self.sq120_to_sq64[sq as usize]);
                 }
             }
@@ -212,7 +239,7 @@ impl Board {
             for _ in 0..count {
                 sq64 = rank * 8 + file;
                 sq120 = self.sq64_to_sq120[sq64 as usize];
-                if piece != pieces::EMPTY as u8 {
+                if piece != pieces::EMPTY {
                     self.pieces[sq120 as usize] = piece;
                 }
                 file += 1;
@@ -261,7 +288,7 @@ impl Board {
 
         //self.ply =
 
-        self.hash_key = self.hasher.generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
+        self.pos_key = self.hasher.generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
     }
 }
 
@@ -315,7 +342,7 @@ pub fn check_board(board:&Board) -> bool {
     // check piece counts
 
     for sq64 in 0..64 {
-        let sq120 = board.sq64_to_sq120[sq64] as usize;
+        let sq120 = board.sq120(sq64) as usize;
         let piece = board.pieces[sq120] as usize;
         if piece as u8 != pieces::EMPTY {
             num_pieces[piece] += 1;
@@ -341,18 +368,18 @@ pub fn check_board(board:&Board) -> bool {
 
     while pawns[pieces::WHITE_S].board > 0 {
         let sq64 = pawns[pieces::WHITE_S].pop_bit();
-        assert_eq!(board.pieces[board.sq64_to_sq120[sq64 as usize] as usize], pieces::WP);
+        assert_eq!(board.pieces[board.sq120(sq64) as usize], pieces::WP);
     }
 
     while pawns[pieces::BLACK_S].board > 0 {
         let sq64 = pawns[pieces::BLACK_S].pop_bit();
-        assert_eq!(board.pieces[board.sq64_to_sq120[sq64 as usize] as usize], pieces::BP);
+        assert_eq!(board.pieces[board.sq120(sq64) as usize], pieces::BP);
     }
 
     while pawns[pieces::BOTH_S].board > 0 {
         let sq64 = pawns[pieces::BOTH_S].pop_bit();
-        assert!(board.pieces[board.sq64_to_sq120[sq64 as usize] as usize] == pieces::BP ||
-            board.pieces[board.sq64_to_sq120[sq64 as usize] as usize] == pieces::WP);
+        assert!(board.pieces[board.sq120(sq64) as usize] == pieces::BP ||
+            board.pieces[board.sq120(sq64) as usize] == pieces::WP);
     }
 
     assert!(material[pieces::WHITE_S] == board.material[pieces::WHITE_S] &&
@@ -392,25 +419,6 @@ mod test {
                    74,
                    "Did not convert file and rank into correct square"
         );
-    }
-
-    #[test]
-    fn test_new_board() {
-        let board = Board::new();
-        assert_eq!(board.sq120_to_sq64[32], 9, "Did not correctly identify 64 square board numbers");
-        assert_eq!(board.sq120_to_sq64[0], 65, "Off board values have incorrect values");
-        let mut sum: i32 = 0;
-        for value in board.sq120_to_sq64 {
-            sum += value as i32;
-        }
-        assert_eq!(sum, 5656, "Sum of sq120_to_s64 contents not correct");
-
-        assert_eq!(board.sq64_to_sq120[21], 46, "Did not correctly identify 120 square board numbers");
-        sum = 0;
-        for value in board.sq64_to_sq120 {
-            sum += value as i32;
-        }
-        assert_eq!(sum, 3808, "Sum of sq64_to_s120 contents not correct");
     }
 
     #[test]
