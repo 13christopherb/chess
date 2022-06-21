@@ -6,7 +6,7 @@ use crate::Board;
 use crate::constants::{squares};
 use crate::utils::square_utils::fr2sq;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BitBoard {
     pub board: u64,
     set_mask: [u64; 64],
@@ -44,6 +44,11 @@ impl BitBoard {
     #[inline(always)]
     pub fn clear_bit(&mut self, sq: u8) {
         self.board &= self.clear_mask[sq as usize]
+    }
+
+    #[inline(always)]
+    pub fn move_bit(&mut self, from: u8, to:u8) {
+        self.board ^= (self.set_mask[to as usize] | self.set_mask[from as usize])
     }
 
     #[inline(always)]
@@ -128,6 +133,18 @@ mod test {
         assert_eq!(board.clone().board,
                    expected_board,
                    "Does not correctly leave a clear bit cleared"
+        );
+    }
+
+    #[test]
+    fn test_move_bit() {
+        let initial_bits: u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00000100;
+        let expected_board: u64 = 0b00000000_00000000_00000001_00000000_00000000_00000000_00000000_00001000;
+        let mut board: BitBoard = BitBoard::new(initial_bits);
+        board.move_bit(2, 3);
+        assert_eq!(board.board,
+                   expected_board,
+                   "Does not correctly clear a bit"
         );
     }
 

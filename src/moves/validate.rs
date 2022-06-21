@@ -17,7 +17,7 @@ fn is_piece_valid(pce: u8) -> bool { pce <= BK }
 fn is_piece(pce: u8) -> bool { (WP..=BK).contains(&pce) }
 
 #[inline(always)]
-pub fn is_sq_on_board(sq:i32) -> bool { FILE_SQUARES[sq as usize] != OFFBOARD }
+pub fn is_sq_on_board(sq:u8) -> bool { FILE_SQUARES[sq as usize] != OFFBOARD }
 
 #[inline(always)]
 pub fn is_knight(pce:u8) -> bool { KNIGHT_NUMBER[pce as usize] }

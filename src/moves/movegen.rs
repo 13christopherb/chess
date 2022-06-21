@@ -15,7 +15,7 @@ pub fn sliding_piece_attacking(sq: u8, side: u8, pces: &[u8; 120]) -> bool {
 
             let mut t_sq: u8 = sq.wrapping_add(dir as u8);
 
-            while is_sq_on_board(t_sq as i32) {
+            while is_sq_on_board(t_sq) {
                 let pce = pces[t_sq as usize];
                 if pce != EMPTY {
                     if is_same_color(pce, side) && (pce == piece || is_queen(pce)) {
@@ -181,10 +181,10 @@ fn generate_wp_moves(pos: &Board, list: &mut Vec<GameMove>) {
             }
         }
 
-        if is_sq_on_board(sq as i32) && is_black(pos.pieces[sqi + 9]) {
+        if is_sq_on_board(sq) && is_black(pos.pieces[sqi + 9]) {
             add_wp_capture_move(pos, sq, sq + 9, pos.pieces[sqi + 9], list);
         }
-        if is_sq_on_board(sq as i32) && is_black(pos.pieces[sqi + 11]) {
+        if is_sq_on_board(sq) && is_black(pos.pieces[sqi + 11]) {
             add_wp_capture_move(pos, sq, sq + 11, pos.pieces[sqi + 11], list);
         }
 
@@ -229,10 +229,10 @@ fn generate_bp_moves(pos: &Board, list: &mut Vec<GameMove>) {
             }
         }
 
-        if is_sq_on_board(sq as i32) && is_white(pos.pieces[sqi - 9]) {
+        if is_sq_on_board(sq) && is_white(pos.pieces[sqi - 9]) {
             add_bp_capture_move(pos, sq, sq - 9, pos.pieces[sqi - 9], list);
         }
-        if is_sq_on_board(sq as i32) && is_white(pos.pieces[sqi - 11]) {
+        if is_sq_on_board(sq) && is_white(pos.pieces[sqi - 11]) {
             add_bp_capture_move(pos, sq, sq - 11, pos.pieces[sqi - 11], list);
         }
 
@@ -273,7 +273,7 @@ fn generate_sliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
                 let dir = PIECE_DIR[piece][j];
                 let mut t_sq = sq + dir;
 
-                while is_sq_on_board(t_sq) {
+                while is_sq_on_board(t_sq as u8) {
                     let t_sqi = t_sq as usize;
                     if pos.pieces[t_sqi] != EMPTY {
                         if PIECE_COLOR[pos.pieces[t_sqi] as usize] == side ^ 1 {
@@ -321,7 +321,7 @@ fn generate_nonsliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
             for j in 0..NUM_DIR[piece] {
                 let dir = PIECE_DIR[piece][j];
                 let t_sq = sq + dir;
-                if !is_sq_on_board(t_sq) {
+                if !is_sq_on_board(t_sq as u8) {
                     continue;
                 }
                 let t_sq = t_sq as usize;

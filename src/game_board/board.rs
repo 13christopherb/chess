@@ -1,6 +1,7 @@
 use crate::game_board::bitboard::BitBoard;
 use crate::constants::{pieces, squares};
-use crate::constants::pieces::EMPTY;
+use crate::constants::pieces::{BIG_PIECE, BOTH, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE};
+use crate::moves::validate::is_sq_on_board;
 use crate::utils::hashkeys::BoardHasher;
 use crate::utils::square_utils::fr2sq;
 
@@ -52,6 +53,7 @@ pub struct Board {
 }
 
 impl Board {
+
     pub fn new() -> Board {
         let mut sq120_to_sq64: [u8; 120] = [65; 120];
         let mut sq64_to_sq120: [u8; 64] = [120; 64];
@@ -89,34 +91,12 @@ impl Board {
             hasher: BoardHasher::new(),
         }
     }
-}
-impl Board {
 
     #[inline(always)]
     pub fn sq64(&self, sq120:u8) -> u8 { self.sq120_to_sq64[sq120 as usize] }
 
     #[inline(always)]
     pub fn sq120(&self, sq64:u8) -> u8 { self.sq64_to_sq120[sq64 as usize] }
-
-    #[inline(always)]
-    pub fn hash_piece(&mut self, pce:u8, sq:u8) {
-        self.pos_key ^= self.hasher.piece_keys[pce as usize][sq as usize];
-    }
-
-    #[inline(always)]
-    pub fn hash_castle(&mut self) {
-        self.pos_key ^= self.hasher.castle_keys[self.castle_perm as usize];
-    }
-
-    #[inline(always)]
-    pub fn hash_side(&mut self) {
-        self.pos_key ^= self.hasher.side_key;
-    }
-
-    #[inline(always)]
-    pub fn hash_en_passant(&mut self) {
-        self.pos_key ^= self.hasher.piece_keys[EMPTY as usize][self.en_passant as usize];
-    }
 
     /// Resets the position to an empty board
     pub fn reset_position(&mut self) {
@@ -290,6 +270,153 @@ impl Board {
 
         self.pos_key = self.hasher.generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
     }
+
+    // Functions for making a move on the board
+
+    #[inline(always)]
+    pub fn hash_piece(&mut self, pce:u8, sq:u8) {
+        self.pos_key ^= self.hasher.piece_keys[pce as usize][sq as usize];
+    }
+
+    #[inline(always)]
+    pub fn hash_castle(&mut self) {
+        self.pos_key ^= self.hasher.castle_keys[self.castle_perm as usize];
+    }
+
+    #[inline(always)]
+    pub fn hash_side(&mut self) {
+        self.pos_key ^= self.hasher.side_key;
+    }
+
+    #[inline(always)]
+    pub fn hash_en_passant(&mut self) {
+        self.pos_key ^= self.hasher.piece_keys[EMPTY as usize][self.en_passant as usize];
+    }
+
+    /// Removes a piece from the board state
+    ///
+    /// # Arguments
+    ///
+    /// * `pos`: The board state
+    /// * `sq`: The square the piece is sitting on. This should be a 120 square board number
+    ///
+    /// returns: ()
+    #[inline]
+    fn clear_piece(&mut self, sq:u8) {
+        let pce = self.pieces[sq as usize] as usize;
+        let col = PIECE_COLOR[pce as usize] as usize;
+        let mut t_pce_num = -1;
+
+        self.hash_piece(self.pieces[sq as usize], sq);
+
+        self.pieces[sq as usize] = EMPTY;
+        self.material[col] -= VALUE[pce];
+
+        if BIG_PIECE[pce] {
+            self.num_big_pieces[col] -= 1;
+            if MAJOR_PIECE[pce] {
+                self.num_major_pieces[col] -= 1;
+            } else {
+                self.num_minor_pieces[col] -= 1;
+            }
+        } else {
+            self.bitboards[col].clear_bit(self.sq64(sq));
+            self.bitboards[BOTH as usize].clear_bit(self.sq64(sq));
+        }
+
+        for i in 0..self.num_pieces[pce] as usize {
+            if self.piece_list[pce][i] == sq {
+                t_pce_num = i as i16;
+                break;
+            }
+        }
+
+        if t_pce_num < 0 {
+            panic!("Didn't find the right piece at the square");
+        }
+
+        self.num_pieces[pce] -= 1;
+        self.piece_list[pce][t_pce_num as usize] = self.piece_list[pce][self.num_pieces[pce] as usize]; // Replace the removed piece with the last piece in the list, after decrementing the max index
+    }
+
+    /// Adds a piece to the board state
+    ///
+    /// # Arguments
+    ///
+    /// * `sq`: The 120-board square number for the location to add the piece to
+    /// * `pce`: The piece number
+    ///
+    /// returns: ()
+    ///
+    #[inline]
+    pub fn add_piece(&mut self, sq: u8, pce: u8) {
+        let col = PIECE_COLOR[pce as usize] as usize;
+        self.hash_piece(pce, sq);
+
+        self.pieces[sq as usize] = pce;
+
+        let t_pce = pce as usize;
+
+        if BIG_PIECE[t_pce] {
+            self.num_big_pieces[col] += 1;
+            if MAJOR_PIECE[t_pce] {
+                self.num_major_pieces[col] += 1;
+            } else {
+                self.num_minor_pieces[col] += 1;
+            }
+        } else {
+            self.bitboards[col].set_bit(self.sq64(sq));
+            self.bitboards[BOTH as usize].set_bit(self.sq64(sq));
+        }
+        self.material[col] += VALUE[t_pce];
+        self.piece_list[t_pce][self.num_pieces[t_pce] as usize] = sq;
+        self.num_pieces[t_pce] += 1;
+    }
+
+    /// Moves a piece from one square on the board to another square on the board.
+    /// The function checks to make sure the squares are on the board, but otherwise
+    /// makes no other checks to ensure the move is valid.
+    ///
+    /// # Arguments
+    ///
+    /// * `from`: The square the piece to be moved is currently on. Should be a 120 sq board number
+    /// * `to`: The square to move the piece to. Should be a 120 sq board number.
+    ///
+    /// returns: ()
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// pos.move_piece(48, 40)
+    /// ```
+    #[inline]
+    pub fn move_piece(&mut self, from:u8, to:u8) {
+        if !is_sq_on_board(from) || !is_sq_on_board(to) {
+            panic!("Squares are off the board");
+        }
+        let from_idx = from as usize;
+        let to_idx = to as usize;
+        let pce = self.pieces[from_idx];
+        let col = PIECE_COLOR[pce as usize] as usize;
+
+        self.hash_piece(pce, from);
+        self.pieces[from_idx] = EMPTY;
+
+        self.hash_piece(pce, to);
+        self.pieces[to_idx] = pce;
+
+        if !BIG_PIECE[pce as usize] {
+            self.bitboards[col].move_bit(self.sq64(from), self.sq64(to));
+            self.bitboards[BOTH as usize].move_bit(self.sq64(from), self.sq64(to));
+        }
+
+        for sq in self.piece_list.iter_mut().flat_map(|r| r.iter_mut()) {
+            if *sq == from {
+                *sq = to;
+                break;
+            }
+        }
+    }
 }
 
 /// Prints the board
@@ -408,7 +535,7 @@ pub fn check_board(board:&Board) -> bool {
 mod test {
     use crate::Board;
     use crate::constants::{pieces, squares};
-    use crate::constants::pieces::{BLACK_S, EMPTY, WHITE, WHITE_S};
+    use crate::constants::pieces::{BLACK, BLACK_S, BR, EMPTY, WHITE, WHITE_S, WP, WR};
     use crate::constants::squares::{NO_SQ, OFFBOARD};
     use crate::utils::square_utils::fr2sq;
 
@@ -489,6 +616,112 @@ mod test {
         assert_eq!(format!("{:b}",board.bitboards[pieces::WHITE as usize].board), format!("{:b}", RANK_2), "Did not set white bitboard correctly");
         assert_eq!(format!("{:b}",board.bitboards[pieces::BLACK as usize].board), format!("{:b}", RANK_7), "Did not set black bitboard correctly");
         assert_eq!(format!("{:b}",board.bitboards[pieces::BOTH as usize].board), format!("{:b}", both_ranks), "Did not set both bitboard correctly");
+    }
+
+    #[test]
+    fn test_clear_piece_rook() {
+        let fen = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/P1P1P3/RNBQKBNR w KQkq e6 0 10";
+        let mut board = Board::new();
+        unsafe {
+            board.parse_fen(fen);
+        }
+        board.update_material_list();
+        let before = board.clone();
+        let sq = board.sq120(0);
+        board.clear_piece(sq);
+        assert_eq!(before.num_major_pieces[WHITE as usize] - 1, board.num_major_pieces[WHITE as usize], "Did not decrement number of major pieces");
+        assert_eq!(before.num_big_pieces[WHITE as usize] - 1, board.num_big_pieces[WHITE as usize], "Did not decrement number of big pieces");
+        assert_eq!(before.num_pieces[WR as usize] - 1, board.num_pieces[WR as usize], "Did not decrement number of rooks");
+        assert_eq!(before.num_major_pieces[BLACK as usize], board.num_major_pieces[BLACK as usize], "Decremented number of major pieces for wrong color");
+        assert_eq!(before.num_minor_pieces[WHITE as usize], board.num_minor_pieces[WHITE as usize], "Decremented wrong category of piece");
+        assert_eq!(before.bitboards[WHITE as usize].board, board.bitboards[WHITE as usize].board, "Changed bitboard when piece wasn't a pawn");
+        assert_eq!(before.piece_list[WR as usize][1], board.piece_list[WR as usize][0], "Did not shorten piece list correctly");
+    }
+
+    #[test]
+    fn test_clear_piece_pawn() {
+        let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/P1P1P3/RNBQKBNR w KQkq e6 0 10";
+        let fen2 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let mut board1 = Board::new();
+        let mut board2 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        unsafe { board2.parse_fen(fen2); }
+        board1.update_material_list();
+        board2.update_material_list();
+        let sq = board1.sq120(8);
+        board1.clear_piece(sq);
+        assert_eq!(board1.bitboards, board2.bitboards, "Did not remove pawn from bitboards");
+        assert_eq!(board1.num_pieces, board2.num_pieces, "Did not update number of pieces");
+        assert_eq!(board1.piece_list[WP as usize][0], board2.piece_list[WP as usize][6], "Did not update piece list correctly");
+    }
+
+    #[test]
+    fn test_add_pawn() {
+        let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/P1P1P3/RNBQKBNR w KQkq e6 0 10";
+        let fen2 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let mut board1 = Board::new();
+        let mut board2 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        unsafe { board2.parse_fen(fen2); }
+        board1.update_material_list();
+        board2.update_material_list();
+        let sq = board1.sq120(8);
+        board2.add_piece(sq, WP);
+        assert_eq!(board1.bitboards, board2.bitboards, "Did not remove pawn from bitboards");
+        assert_eq!(board1.num_pieces, board2.num_pieces, "Did not update number of pieces");
+        assert_eq!(board1.piece_list[WP as usize][0], board2.piece_list[WP as usize][7], "Did not update piece list correctly");
+    }
+
+    #[test]
+    fn test_add_rook() {
+        let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let fen2 = "1nbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let mut board1 = Board::new();
+        let mut board2 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        unsafe { board2.parse_fen(fen2); }
+        board1.update_material_list();
+        board2.update_material_list();
+        let sq = board1.sq120(56);
+        board2.add_piece(sq, BR);
+        assert_eq!(board1.piece_list[BR as usize][0], board2.piece_list[BR as usize][1], "Did not update piece list correctly");
+        assert_eq!(board1.num_pieces, board2.num_pieces, "Did not update number of pieces");
+        assert_eq!(board1.num_big_pieces, board2.num_big_pieces, "Did not update number of big pieces");
+        assert_eq!(board1.num_major_pieces, board2.num_major_pieces, "Did not update number of major pieces");
+        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
+    }
+
+    #[test]
+    fn test_move_rook() {
+        let fen1 = "rnbqkbnr/1p1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let fen2 = "1nbqkbnr/rp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let mut board1 = Board::new();
+        let mut board2 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        unsafe { board2.parse_fen(fen2); }
+        board1.update_material_list();
+        board2.update_material_list();
+        let from = board1.sq120(56);
+        let to = board1.sq120(48);
+        board1.move_piece(from, to);
+        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
+    }
+
+    #[test]
+    fn test_move_pawn() {
+        let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let fen2 = "rnbqkbnr/1p1p1pPp/p7/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let mut board1 = Board::new();
+        let mut board2 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        unsafe { board2.parse_fen(fen2); }
+        board1.update_material_list();
+        board2.update_material_list();
+        let from = board1.sq120(48);
+        let to = board1.sq120(40);
+        board1.move_piece(from, to);
+        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
+        assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
     }
 }
 
