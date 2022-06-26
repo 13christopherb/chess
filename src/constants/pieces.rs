@@ -23,7 +23,8 @@ pub const BOTH_S:usize = 2;
 
 pub const KNIGHT_NUMBER:[bool; 13] = [false, false, true, false, false, false,
     false, false, true, false, false, false, false];
-
+pub const PAWN_NUMBER:[bool; 13] = [false, true, false, false, false, false,
+    false, true, false, false, false, false, false];
 pub const KING_NUMBER:[bool; 13] = [false, false, false, false, false, false,
     true, false, false, false, false, false, true];
 pub const SLIDES:[bool; 13] = [false, false, false, true, true, true, false, false, false, true, true, true, false];
@@ -60,4 +61,7 @@ pub const WK_CASTLE:u8 = 1;
 pub const WQ_CASTLE:u8 = 2;
 pub const BK_CASTLE:u8 = 3;
 pub const BQ_CASTLE:u8 = 4;
+
+
+
 

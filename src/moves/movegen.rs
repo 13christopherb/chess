@@ -349,8 +349,8 @@ fn generate_nonsliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
 }
 
 #[inline(always)]
-fn generate_castle_move(pos: &Board, side: u8, sqs: &[usize], from: u8, to: u8, list: &mut Vec<GameMove>) {
-    if !sqs.iter().any(|x| pos.pieces[*x] != EMPTY) && !sqs.iter().any(|x| square_is_attacked(*x as u8, side, &pos.pieces)) {
+fn generate_castle_move(pos: &Board, side: u8, sqs: &[u8], from: u8, to: u8, list: &mut Vec<GameMove>) {
+    if !sqs.iter().any(|x| pos.pieces[*x as usize] != EMPTY) && !sqs.iter().any(|x| square_is_attacked(*x, side, &pos.pieces)) {
         add_quiet_move(
             pos,
             GameMove::new(from, to, EMPTY, EMPTY, MFLAG_CA),
@@ -366,11 +366,11 @@ fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
         generate_wp_moves(pos, list); // Pawns have a lot of special rules for movement, best to write specific functions
 
         if pos.castle_perm & WK_CASTLE != 0 {
-            generate_castle_move(&pos, BLACK, &vec!(F1, G1), E1 as u8, G1 as u8, list);
+            generate_castle_move(&pos, BLACK, &vec!(F1, G1), E1, G1, list);
         }
 
         if pos.castle_perm & WQ_CASTLE != 0 {
-            generate_castle_move(&pos, BLACK, &vec!(D1, C1, B1), E1 as u8, C1 as u8, list);
+            generate_castle_move(&pos, BLACK, &vec!(D1, C1, B1), E1, C1, list);
         }
 
         generate_sliding_moves(pos, list, WHITE);
@@ -379,11 +379,11 @@ fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
         generate_bp_moves(pos, list);
 
         if pos.castle_perm & BK_CASTLE != 0 {
-            generate_castle_move(&pos, WHITE, &vec!(F8, G8), G1 as u8, G8 as u8, list);
+            generate_castle_move(&pos, WHITE, &vec!(F8, G8), G1, G8, list);
         }
 
         if pos.castle_perm & BQ_CASTLE != 0 {
-            generate_castle_move(&pos, WHITE, &vec!(D8, C8, B8), E8 as u8, C8 as u8, list);
+            generate_castle_move(&pos, WHITE, &vec!(D8, C8, B8), E8, C8, list);
         }
 
         generate_sliding_moves(pos, list, BLACK);

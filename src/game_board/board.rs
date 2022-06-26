@@ -1,16 +1,36 @@
 use crate::game_board::bitboard::BitBoard;
 use crate::constants::{pieces, squares};
-use crate::constants::pieces::{BIG_PIECE, BOTH, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE};
+use crate::constants::pieces::{BIG_PIECE, BOTH, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE};
+use crate::constants::squares::{A1, A8, D1, D8, F1, F8, H1, H8, NO_SQ};
+use crate::GameMove;
+use crate::moves::gamemove::{MFLAG_EP, MFLAG_PS};
+use crate::moves::movegen::square_is_attacked;
 use crate::moves::validate::is_sq_on_board;
 use crate::utils::hashkeys::BoardHasher;
+use crate::utils::piece_utils::{piece_is_king, piece_is_pawn};
 use crate::utils::square_utils::fr2sq;
 
 /// Code used for storing the general state of the board
 
+const CASTLE_PERM:[u8; 120] = [
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 13, 15, 15, 15, 12, 15, 15, 14, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15,  7, 15, 15, 15,  3, 15, 15, 11, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15
+]; // For bitwise and with castle perm because castle perm is kept as 4 bits
+
 #[derive(Debug, Copy, Clone)]
 pub struct PastMove {
-    moved: u64,
-    en_passant: u64,
+    moved: u32,
+    en_passant: u8,
     castle_perm: u8,
     //Castle permission
     fifty_move: u64,
@@ -417,6 +437,97 @@ impl Board {
             }
         }
     }
+
+    #[inline]
+    pub fn undo_move(&mut self) {
+
+    }
+
+    #[inline]
+    pub fn make_move(&mut self, mov:GameMove) -> bool {
+        let from = mov.origin();
+        let to = mov.destination();
+        let side = self.side;
+
+        //self.history[self.history_ply as usize].pos_key = self.pos_key;
+
+        // Handle en passant capture
+        if mov.is_en_passant() {
+            if side == WHITE {
+                self.clear_piece(to - 10);
+            } else {
+                self.clear_piece(to + 10);
+            }
+        } else if mov.is_castle_move() {
+            match to {
+                C1 => self.move_piece(A1, D1), // Moving the rook as part of castling
+                C8 => self.move_piece(A8, D8),
+                G1 => self.move_piece(H1, F1),
+                G8 => self.move_piece(H8, F8)
+            }
+        }
+
+        if self.en_passant != NO_SQ {self.hash_en_passant();}
+
+        self.hash_castle();
+
+        // self.history[self.history_ply as usize].moved = mov.move_int;
+        // self.history[self.history_ply as usize].fifty_move = self.fifty_move;
+        // self.history[self.history_ply as usize].en_passant = self.en_passant;
+        // self.history[self.history_ply as usize].castle_perm = self.castle_perm;
+
+        self.castle_perm &= CASTLE_PERM[from as usize];
+        self.castle_perm &= CASTLE_PERM[to as usize];
+        self.en_passant = NO_SQ;
+
+        self.hash_castle();
+
+        let captured = mov.capture();
+
+        if captured != EMPTY {
+            self.clear_piece(to);
+            self.fifty_move = 0;
+        } else {
+            self.fifty_move += 1;
+        }
+
+        self.history_ply += 1;
+        self.ply += 1;
+
+        if piece_is_pawn(self.pieces[from as usize]) {
+            if mov.is_en_passant() {
+                if side == WHITE {
+                    self.en_passant = from + 10;
+                } else {
+                    self.en_passant = from - 10;
+                }
+                self.hash_en_passant();
+            }
+        }
+
+        self.move_piece(from, to);
+
+        let promoted_pce = mov.promoted_piece();
+
+        if promoted_pce != EMPTY {
+            self.clear_piece(to);
+            self.add_piece(to, promoted_pce);
+        }
+
+        if piece_is_king(self.pieces[to as usize]) {
+            self.king_sq[self.side as usize] = to;
+        }
+
+        self.side ^= 1;
+        self.hash_side();
+
+        if square_is_attacked(self.king_sq[side as usize], self.side, &self.pieces) {
+            self.undo_move();
+            return false;
+        }
+
+        true
+    }
 }
 
 /// Prints the board
@@ -533,10 +644,10 @@ pub fn check_board(board:&Board) -> bool {
 
 #[cfg(test)]
 mod test {
-    use crate::Board;
+    use crate::{Board, GameMove};
     use crate::constants::{pieces, squares};
-    use crate::constants::pieces::{BLACK, BLACK_S, BR, EMPTY, WHITE, WHITE_S, WP, WR};
-    use crate::constants::squares::{NO_SQ, OFFBOARD};
+    use crate::constants::pieces::{BLACK, BLACK_S, BP, BR, EMPTY, WHITE, WHITE_S, WP, WR};
+    use crate::constants::squares::{FILE_E, FILE_F, NO_SQ, OFFBOARD, RANK_5, RANK_6};
     use crate::utils::square_utils::fr2sq;
 
     #[test]
@@ -723,5 +834,27 @@ mod test {
         assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
         assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
     }
+
+    #[test]
+    fn test_make_move() {
+        let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let fen2 = "rnbqkbnr/pp1p1pPp/4P3/2p5/1P1P4/3P4/2P1P3/RNBQKBNR b KQkq - 0 10";
+        let mut board1 = Board::new();
+        let mut board2 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        unsafe { board2.parse_fen(fen2); }
+        board1.update_material_list();
+        board2.update_material_list();
+        let from = fr2sq(FILE_F, RANK_5);
+        let to = fr2sq(FILE_E, RANK_6);
+        let mov = GameMove::new(from, to, 0, 0, 0x40000);
+        board1.make_move(mov);
+        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
+        assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
+        assert_eq!(board1.fifty_move, 1, "Did not update fifty move");
+        assert_eq!(board1.side, BLACK, "Did not change side");
+    }
+
+    //TODO: More tests for make move
 }
 

@@ -35,20 +35,34 @@ impl GameMove {
             score: 0
         }
     }
+
+    /// Returns the starting square for the move
     #[inline(always)]
     pub fn origin(self) -> u8 { (self.move_int & 0x7F) as u8 }
 
+    /// Returns the final square for the move
     #[inline(always)]
     pub fn destination(self) -> u8 { (self.move_int >> 7 & 0x7F) as u8 }
 
+    /// Returns the piece type of any captured piece
     #[inline(always)]
     pub fn capture(self) -> u8 { (self.move_int >> 14 & 0xF) as u8 }
 
+    /// Returns the piece type a pawn was promoted to (if applicable)
     #[inline(always)]
     pub fn promoted_piece(self) -> u8 { (self.move_int >> 20 & 0xF) as u8 }
 
+    /// Returns whether or not this was the first move of the game for the pawn (if applicable)
     #[inline(always)]
-    pub fn pawn_start(&self) -> bool { (self.move_int & MFLAG_PS) > 0}
+    pub fn is_pawn_start(&self) -> bool { (self.move_int & MFLAG_PS) > 0}
+
+    /// Returns whether or not the move was an en passant move
+    #[inline(always)]
+    pub fn is_en_passant(&self) -> bool { (self.move_int & MFLAG_EP) > 0}
+
+    /// Returns whether or not this was a castling move
+    #[inline(always)]
+    pub fn is_castle_move(&self) -> bool { (self.move_int & MFLAG_CA) > 0}
 }
 
 /// Prints the board
