@@ -1,6 +1,6 @@
 use crate::game_board::bitboard::BitBoard;
 use crate::constants::{pieces, squares};
-use crate::constants::pieces::{BIG_PIECE, BOTH, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE};
+use crate::constants::pieces::{BIG_PIECE, BOTH, BP, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE, WP};
 use crate::constants::squares::{A1, A8, D1, D8, F1, F8, H1, H8, NO_SQ};
 use crate::GameMove;
 use crate::moves::gamemove::{MFLAG_EP, MFLAG_PS};
@@ -29,7 +29,7 @@ const CASTLE_PERM:[u8; 120] = [
 
 #[derive(Debug, Copy, Clone)]
 pub struct PastMove {
-    moved: u32,
+    game_move: GameMove,
     en_passant: u8,
     castle_perm: u8,
     //Castle permission
@@ -440,16 +440,86 @@ impl Board {
 
     #[inline]
     pub fn undo_move(&mut self) {
+        self.history_ply -= 1;
+        self.ply -= 1;
 
+        let past_move;
+        match self.history.pop() {
+            Some(m) => past_move = m,
+            None => panic!("Undo was called with no previous moves"),
+        }
+
+        let from = past_move.game_move.origin();
+        let to = past_move.game_move.destination();
+
+        if self.en_passant != NO_SQ { self.hash_en_passant(); }
+        self.hash_castle();
+
+        self.castle_perm = past_move.castle_perm;
+        self.fifty_move = past_move.fifty_move;
+        self.en_passant = past_move.en_passant;
+
+        if self.en_passant != NO_SQ { self.hash_en_passant(); }
+        self.hash_castle();
+
+        self.side ^= 1;
+        self.hash_side();
+
+        if past_move.game_move.is_en_passant() {
+            if self.side == WHITE {
+                self.add_piece(to - 10, BP);
+            } else {
+                self.add_piece(to + 10, WP);
+            }
+        } else if past_move.game_move.is_castle_move() {
+            match to {
+                C1 => self.move_piece(D1, A1),
+                C8 => self.move_piece(D8, A8),
+                G1 => self.move_piece(F1, H1),
+                G8 => self.move_piece(F8, H8),
+                _ => panic!("Invalid castling move")
+            }
+        }
+
+        self.move_piece(to, from);
+
+        if piece_is_king(self.pieces[from as usize]) {
+            self.king_sq[self.side as usize] = from;
+        }
+
+        let captured = past_move.game_move.capture();
+        if captured != EMPTY {
+            self.add_piece(to, captured);
+        }
+
+        let promoted = past_move.game_move.promoted_piece();
+
+        if promoted != EMPTY {
+            self.clear_piece(from);
+            self.add_piece(from, if PIECE_COLOR[promoted as usize] == WHITE { WP } else { BP });
+        }
     }
 
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `mov`:
+    ///
+    /// returns: bool
+    ///
+    /// # Examples
+    ///
+    /// ```
+    ///
+    /// ```
     #[inline]
     pub fn make_move(&mut self, mov:GameMove) -> bool {
         let from = mov.origin();
         let to = mov.destination();
         let side = self.side;
 
-        //self.history[self.history_ply as usize].pos_key = self.pos_key;
+        let his_pos_key = self.pos_key;
 
         // Handle en passant capture
         if mov.is_en_passant() {
@@ -471,10 +541,13 @@ impl Board {
 
         self.hash_castle();
 
-        // self.history[self.history_ply as usize].moved = mov.move_int;
-        // self.history[self.history_ply as usize].fifty_move = self.fifty_move;
-        // self.history[self.history_ply as usize].en_passant = self.en_passant;
-        // self.history[self.history_ply as usize].castle_perm = self.castle_perm;
+        self.history.push(PastMove {
+            pos_key: his_pos_key,
+            game_move: mov,
+            fifty_move: self.fifty_move,
+            en_passant: self.en_passant,
+            castle_perm: self.castle_perm
+        });
 
         self.castle_perm &= CASTLE_PERM[from as usize];
         self.castle_perm &= CASTLE_PERM[to as usize];
@@ -646,8 +719,9 @@ pub fn check_board(board:&Board) -> bool {
 mod test {
     use crate::{Board, GameMove};
     use crate::constants::{pieces, squares};
-    use crate::constants::pieces::{BLACK, BLACK_S, BP, BR, EMPTY, WHITE, WHITE_S, WP, WR};
-    use crate::constants::squares::{FILE_E, FILE_F, NO_SQ, OFFBOARD, RANK_5, RANK_6};
+    use crate::constants::pieces::{BLACK, BLACK_S, BP, BR, EMPTY, WHITE, WHITE_S, WP, WQ, WR};
+    use crate::constants::squares::{FILE_B, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_SQ, OFFBOARD, RANK_1, RANK_2, RANK_3, RANK_5, RANK_6, RANK_7, RANK_8};
+    use crate::game_board::board::PastMove;
     use crate::utils::square_utils::fr2sq;
 
     #[test]
@@ -853,8 +927,80 @@ mod test {
         assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
         assert_eq!(board1.fifty_move, 1, "Did not update fifty move");
         assert_eq!(board1.side, BLACK, "Did not change side");
+        assert_eq!(board1.history.pop().unwrap().game_move, mov, "Did not update move histroy");
     }
 
-    //TODO: More tests for make move
-}
+    #[test]
+    fn test_undo_move() {
+        let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let fen2 = "rnbqkbnr/pp1p1pPp/4P3/2p5/1P1P4/3P4/2P1P3/RNBQKBNR b KQkq - 0 10";
+        let mut board1 = Board::new();
+        let mut board2 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        unsafe { board2.parse_fen(fen2); }
+        board1.update_material_list();
+        board2.update_material_list();
+        let from = fr2sq(FILE_F, RANK_5);
+        let to = fr2sq(FILE_E, RANK_6);
+        let mov = GameMove::new(from, to, 0, 0, 0x40000);
+        board2.history.push(PastMove {
+            game_move: mov,
+            en_passant: NO_SQ,
+            castle_perm: board1.castle_perm,
+            fifty_move: board1.fifty_move,
+            pos_key: board1.pos_key
+        });
+        board2.ply = 1;
+        board2.history_ply = 1;
+        board2.undo_move();
+        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
+        assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
+        assert_eq!(board2.fifty_move, 0, "Did not update fifty move");
+        assert_eq!(board2.side, WHITE, "Did not change side");
+    }
 
+    #[test]
+    fn test_make_move_into_check() {
+        let fen1 = "rnb1kbnr/pp1p1pPp/8/2p1pPq1/1P1P4/2NP4/2P1P3/R1BQKBNR w KQkq - 2 11";
+        let mov = GameMove::new(fr2sq(FILE_E, RANK_1), fr2sq(FILE_D, RANK_2), 0, 0, 0);
+        let mut board1 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        let board2 = board1.clone();
+        board1.make_move(mov);
+        assert_eq!(board1.pieces, board2.pieces, "Changed pieces with invalid move");
+        assert_eq!(board1.bitboards, board2.bitboards, "Changed bitboard with invalid move");
+        assert_eq!(board1.fifty_move, 0, "Updated fifty moves with invalid move");
+        assert_eq!(board1.side, WHITE, "Changed side with invalid move");
+        assert_eq!(board1.history.len(), 0, "Invalid move remained in board");
+    }
+
+    fn test_make_and_undo() {
+        let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
+        let mut board1 = Board::new();
+        unsafe { board1.parse_fen(fen1); }
+        board1.update_material_list();
+        let board2 = board1.clone();
+        let mut moves = vec![];
+        moves.push(GameMove::new(fr2sq(FILE_F, RANK_5), fr2sq(FILE_E, RANK_6), 0, 0, 0x40000));
+        moves.push(GameMove::new(fr2sq(FILE_B, RANK_7), fr2sq(FILE_B, RANK_5), 0, 0, 0x80000));
+        moves.push(GameMove::new(fr2sq(FILE_G, RANK_1), fr2sq(FILE_F, RANK_3), 0, 0, 0));
+        moves.push(GameMove::new(fr2sq(FILE_D, RANK_7), fr2sq(FILE_E, RANK_6), WP, 0, 0));
+        moves.push(GameMove::new(fr2sq(FILE_F, RANK_1), fr2sq(FILE_H, RANK_3), 0, 0, 0));
+        moves.push( GameMove::new(fr2sq(FILE_E, RANK_8), fr2sq(FILE_E, RANK_7), 0, 0, 0));
+        moves.push(GameMove::new(fr2sq(FILE_E, RANK_1), fr2sq(FILE_G, RANK_1), 0, 0, 0x1000000));
+        moves.push(GameMove::new(fr2sq(FILE_D, RANK_8), fr2sq(FILE_E, RANK_8), 0, 0, 0));
+        moves.push(GameMove::new(fr2sq(FILE_G, RANK_7), fr2sq(FILE_H, RANK_8), BR, WQ, 0x40000));
+
+        for mov in &moves {
+            board1.make_move(*mov);
+        }
+        for i in 0..moves.len() {
+            board1.undo_move();
+        }
+        assert_eq!(board1.pieces, board2.pieces, "Did not end up with same pieces after undo moves");
+        assert_eq!(board1.bitboards, board2.bitboards, "Did not end up with same bitboards after undo moves");
+        assert_eq!(board1.fifty_move, 0, "Did not undo fifty moves");
+        assert_eq!(board1.side, WHITE, "Did not undo side");
+        assert_eq!(board1.history.len(), 0, "Didn't wind back history");
+    }
+}
