@@ -365,6 +365,7 @@ fn generate_castle_move(pos: &Board, side: u8, sqs: &[u8], from: u8, to: u8, lis
 }
 
 pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
+    //assert!(check_board(pos));
 
     if pos.side == WHITE {
         generate_wp_moves(pos, list); // Pawns have a lot of special rules for movement, best to write specific functions

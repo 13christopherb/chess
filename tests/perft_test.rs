@@ -3,8 +3,10 @@ use std::env;
 use std::fs;
 use std::num::ParseIntError;
 use std::str::FromStr;
+use chess::constants::squares::{FILE_E, FILE_F, RANK_8};
 use chess::moves::gamemove::GameMove;
 use chess::moves::movegen::generate_all_moves;
+use chess::utils::square_utils::fr2sq;
 
 #[derive(Clone)]
 struct PositionCounts {
@@ -38,7 +40,7 @@ fn read_all<T: FromStr>(file_name: &str) -> Vec<Result<T, <T as FromStr>::Err>> 
         .collect()
 }
 
-fn perft(depth: u8, board: &mut Board) -> u64 {
+fn perft(depth: u8, board: &mut Board, movs: & Vec<GameMove>) -> u64 {
     if depth == 0 {
         return 1;
     }
@@ -49,15 +51,15 @@ fn perft(depth: u8, board: &mut Board) -> u64 {
     generate_all_moves(board, &mut movelist);
 
     for mov in movelist {
-        // println!("{}", board);
-        // println!("{} - {} ({}): {}", board.pieces[mov.origin() as usize], board.pieces[mov.destination() as usize], mov.capture(), mov);
-        if !board.make_move(mov) { continue; }
-        // println!("{}", board);
-        move_number += perft(depth - 1, board);
+      if !board.make_move(mov) { continue; }
+
+
+        let mut mov_list = movs.clone();
+        mov_list.push(mov);
+
+        move_number += perft(depth - 1, board, &mov_list);
+
         board.undo_move();
-        // println!("{}", board);
-        // println!("=============================");
-        // println!("=============================");
     }
     move_number
 }
@@ -70,11 +72,13 @@ fn perft_test() {
         .filter_map(|x| x.clone().ok())
         .collect();
 
-    let mut board = Board::new();
-    unsafe{ board.parse_fen(positions[1].fen.as_str()) };
-    board.update_material_list();
-
-    let move_number = perft(3, &mut board);
-
-    assert_eq!(move_number, positions[1].nums[2]);
+    for i in 0..positions.len() {
+        let mut board = Board::new();
+        unsafe{ board.parse_fen(positions[i].fen.as_str()) };
+        board.update_material_list();
+        for j in 0..positions[i].nums.len() {
+            let move_number = perft((j + 1) as u8, &mut board, &Vec::new());
+            assert_eq!(move_number, positions[i].nums[j], "Did not find ocrrect number of moves for position {} at depth {}", i, j);
+        }
+    }
 }

@@ -1,7 +1,7 @@
 use crate::game_board::bitboard::BitBoard;
 use crate::constants::{pieces, squares};
 use crate::constants::pieces::{BIG_PIECE, BOTH, BP, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE, WP};
-use crate::constants::squares::{A1, A8, D1, D8, F1, F8, H1, H8, NO_SQ};
+use crate::constants::squares::{A1, A8, C8, C1, G1, G8, D1, D8, F1, F8, H1, H8, NO_SQ};
 use crate::moves::gamemove::{MFLAG_EP, MFLAG_PS, GameMove};
 use crate::moves::movegen::square_is_attacked;
 use crate::moves::validate::is_sq_on_board;
@@ -429,13 +429,7 @@ impl Board {
         for pces in self.piece_list.iter_mut() {
             for pce in pces.iter_mut() {
                 if *pce == from {
-                    if *pce == 35 {
-                        println!("test");
-                    }
                     *pce = to;
-                    if *pce == 35 {
-                        println!("test");
-                    }
                     break;
                 }
             }
@@ -478,10 +472,10 @@ impl Board {
         } else if past_move.game_move.is_castle_move() {
             match to {
                 C1 => self.move_piece(D1, A1),
-                C8 => self.move_piece(D8, A8),
                 G1 => self.move_piece(F1, H1),
+                C8 => self.move_piece(D8, A8),
                 G8 => self.move_piece(F8, H8),
-                _ => panic!("Invalid castling move")
+                _  => panic!("Invalid castling move")
             }
         }
 
@@ -537,7 +531,8 @@ impl Board {
                 C1 => self.move_piece(A1, D1), // Moving the rook as part of castling
                 C8 => self.move_piece(A8, D8),
                 G1 => self.move_piece(H1, F1),
-                G8 => self.move_piece(H8, F8)
+                G8 => self.move_piece(H8, F8),
+                _ => panic!("Invalid castling move"),
             }
         }
 
@@ -925,13 +920,11 @@ mod test {
         unsafe { board2.parse_fen(fen2); }
         board1.update_material_list();
         board2.update_material_list();
-        check_board(&board1);
         let from = fr2sq(FILE_F, RANK_5);
         let to = fr2sq(FILE_E, RANK_6);
         let mov = GameMove::new(from, to, 0, 0, 0x40000);
 
         board1.make_move(mov);
-        check_board(&board1);
         assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
         assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
         assert_eq!(board1.fifty_move, 1, "Did not update fifty move");
@@ -981,7 +974,6 @@ mod test {
         assert_eq!(board1.fifty_move, 0, "Updated fifty moves with invalid move");
         assert_eq!(board1.side, WHITE, "Changed side with invalid move");
         assert_eq!(board1.history.len(), 0, "Invalid move remained in board");
-        check_board(&board1);
     }
 
     fn test_make_and_undo() {
@@ -1012,6 +1004,5 @@ mod test {
         assert_eq!(board1.fifty_move, 0, "Did not undo fifty moves");
         assert_eq!(board1.side, WHITE, "Did not undo side");
         assert_eq!(board1.history.len(), 0, "Didn't wind back history");
-        check_board(&board1);
     }
 }
