@@ -2,13 +2,14 @@ use crate::game_board::bitboard::BitBoard;
 use crate::constants::{pieces, squares};
 use crate::constants::pieces::{BIG_PIECE, BOTH, BP, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE, WP};
 use crate::constants::squares::{A1, A8, D1, D8, F1, F8, H1, H8, NO_SQ};
-use crate::GameMove;
-use crate::moves::gamemove::{MFLAG_EP, MFLAG_PS};
+use crate::moves::gamemove::{MFLAG_EP, MFLAG_PS, GameMove};
 use crate::moves::movegen::square_is_attacked;
 use crate::moves::validate::is_sq_on_board;
 use crate::utils::hashkeys::BoardHasher;
 use crate::utils::piece_utils::{piece_is_king, piece_is_pawn};
 use crate::utils::square_utils::fr2sq;
+//Piece list isn't getting updated right?
+
 
 /// Code used for storing the general state of the board
 
@@ -404,11 +405,6 @@ impl Board {
     ///
     /// returns: ()
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// pos.move_piece(48, 40)
-    /// ```
     #[inline]
     pub fn move_piece(&mut self, from:u8, to:u8) {
         if !is_sq_on_board(from) || !is_sq_on_board(to) {
@@ -430,10 +426,18 @@ impl Board {
             self.bitboards[BOTH as usize].move_bit(self.sq64(from), self.sq64(to));
         }
 
-        for sq in self.piece_list.iter_mut().flat_map(|r| r.iter_mut()) {
-            if *sq == from {
-                *sq = to;
-                break;
+        for pces in self.piece_list.iter_mut() {
+            for pce in pces.iter_mut() {
+                if *pce == from {
+                    if *pce == 35 {
+                        println!("test");
+                    }
+                    *pce = to;
+                    if *pce == 35 {
+                        println!("test");
+                    }
+                    break;
+                }
             }
         }
     }
@@ -717,11 +721,12 @@ pub fn check_board(board:&Board) -> bool {
 
 #[cfg(test)]
 mod test {
-    use crate::{Board, GameMove};
+    use crate::game_board::board::{Board, check_board, GameMove};
     use crate::constants::{pieces, squares};
     use crate::constants::pieces::{BLACK, BLACK_S, BP, BR, EMPTY, WHITE, WHITE_S, WP, WQ, WR};
     use crate::constants::squares::{FILE_B, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_SQ, OFFBOARD, RANK_1, RANK_2, RANK_3, RANK_5, RANK_6, RANK_7, RANK_8};
     use crate::game_board::board::PastMove;
+    use crate::moves::validate::is_sq_on_board;
     use crate::utils::square_utils::fr2sq;
 
     #[test]
@@ -915,14 +920,18 @@ mod test {
         let fen2 = "rnbqkbnr/pp1p1pPp/4P3/2p5/1P1P4/3P4/2P1P3/RNBQKBNR b KQkq - 0 10";
         let mut board1 = Board::new();
         let mut board2 = Board::new();
+
         unsafe { board1.parse_fen(fen1); }
         unsafe { board2.parse_fen(fen2); }
         board1.update_material_list();
         board2.update_material_list();
+        check_board(&board1);
         let from = fr2sq(FILE_F, RANK_5);
         let to = fr2sq(FILE_E, RANK_6);
         let mov = GameMove::new(from, to, 0, 0, 0x40000);
+
         board1.make_move(mov);
+        check_board(&board1);
         assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
         assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
         assert_eq!(board1.fifty_move, 1, "Did not update fifty move");
@@ -972,6 +981,7 @@ mod test {
         assert_eq!(board1.fifty_move, 0, "Updated fifty moves with invalid move");
         assert_eq!(board1.side, WHITE, "Changed side with invalid move");
         assert_eq!(board1.history.len(), 0, "Invalid move remained in board");
+        check_board(&board1);
     }
 
     fn test_make_and_undo() {
@@ -1002,5 +1012,6 @@ mod test {
         assert_eq!(board1.fifty_move, 0, "Did not undo fifty moves");
         assert_eq!(board1.side, WHITE, "Did not undo side");
         assert_eq!(board1.history.len(), 0, "Didn't wind back history");
+        check_board(&board1);
     }
 }

@@ -83,6 +83,7 @@ impl std::fmt::Display for GameMove {
 
         let mut output = String::from("");
 
+
         output.push_str(start_file);
         output.push_str(start_rank);
         output.push_str(if capture {"x"} else {" "});

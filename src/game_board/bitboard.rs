@@ -2,7 +2,7 @@
 /// presence of a piece for one particular square.
 
 use crate::utils::bit_operations::bitscan_forward;
-use crate::Board;
+use crate::game_board::board::Board;
 use crate::constants::{squares};
 use crate::utils::square_utils::fr2sq;
 

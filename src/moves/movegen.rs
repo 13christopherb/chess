@@ -2,7 +2,7 @@ use crate::constants::{pieces::*, pieces, squares::*};
 use crate::moves::gamemove::{GameMove, MFLAG_CA, MFLAG_EP, MFLAG_PS};
 use crate::moves::validate::{*};
 use crate::utils::square_utils::{fr2sq, init_file_rank_arrays};
-use crate::{Board, check_board};
+use crate::game_board::board::{Board, check_board};
 
 const MAX_POSITION_MOVES: u32 = 256;
 
@@ -188,15 +188,17 @@ fn generate_wp_moves(pos: &Board, list: &mut Vec<GameMove>) {
             add_wp_capture_move(pos, sq, sq + 11, pos.pieces[sqi + 11], list);
         }
 
-        if sq + 9 == pos.en_passant {
-            add_capture_move(pos, GameMove::new(sq, sq + 9, EMPTY, EMPTY, MFLAG_EP), list);
-        }
-        if sq + 11 == pos.en_passant {
-            add_capture_move(
-                pos,
-                GameMove::new(sq, sq + 11, EMPTY, EMPTY, MFLAG_EP),
-                list,
-            );
+        if pos.en_passant != NO_SQ {
+            if sq + 9 == pos.en_passant {
+                add_capture_move(pos, GameMove::new(sq, sq + 9, EMPTY, EMPTY, MFLAG_EP), list);
+            }
+            if sq + 11 == pos.en_passant {
+                add_capture_move(
+                    pos,
+                    GameMove::new(sq, sq + 11, EMPTY, EMPTY, MFLAG_EP),
+                    list,
+                );
+            }
         }
     }
 }
@@ -236,15 +238,17 @@ fn generate_bp_moves(pos: &Board, list: &mut Vec<GameMove>) {
             add_bp_capture_move(pos, sq, sq - 11, pos.pieces[sqi - 11], list);
         }
 
-        if sq - 9 == pos.en_passant {
-            add_capture_move(pos, GameMove::new(sq, sq - 9, EMPTY, EMPTY, MFLAG_EP), list);
-        }
-        if sq - 11 == pos.en_passant {
-            add_capture_move(
-                pos,
-                GameMove::new(sq, sq - 11, EMPTY, EMPTY, MFLAG_EP),
-                list,
-            );
+        if (pos.en_passant != NO_SQ) {
+            if sq - 9 == pos.en_passant {
+                add_capture_move(pos, GameMove::new(sq, sq - 9, EMPTY, EMPTY, MFLAG_EP), list);
+            }
+            if sq - 11 == pos.en_passant {
+                add_capture_move(
+                    pos,
+                    GameMove::new(sq, sq - 11, EMPTY, EMPTY, MFLAG_EP),
+                    list,
+                );
+            }
         }
     }
 }
@@ -268,7 +272,6 @@ fn generate_sliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
     while piece != 0 {
         for i in 0..pos.num_pieces[piece as usize] as usize {
             let sq = pos.piece_list[piece][i] as i32;
-
             for j in 0..NUM_DIR[piece] {
                 let dir = PIECE_DIR[piece][j];
                 let mut t_sq = sq + dir;
@@ -285,6 +288,7 @@ fn generate_sliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
                         }
                         break;
                     }
+
                     add_quiet_move(
                         pos,
                         GameMove::new(sq as u8, t_sq as u8, EMPTY, EMPTY, 0),
@@ -328,6 +332,7 @@ fn generate_nonsliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
 
                 if pos.pieces[t_sq] != EMPTY {
                     if PIECE_COLOR[pos.pieces[t_sq] as usize] == side ^ 1 {
+
                         add_capture_move(
                             pos,
                             GameMove::new(sq as u8, t_sq as u8, pos.pieces[t_sq], EMPTY, 0),
@@ -359,8 +364,7 @@ fn generate_castle_move(pos: &Board, side: u8, sqs: &[u8], from: u8, to: u8, lis
     }
 }
 
-fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
-    assert!(check_board(pos));
+pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
 
     if pos.side == WHITE {
         generate_wp_moves(pos, list); // Pawns have a lot of special rules for movement, best to write specific functions
@@ -397,7 +401,7 @@ mod test {
     use crate::moves::movegen::*;
     use crate::moves::gamemove::GameMove;
     use crate::utils::square_utils::fr2sq;
-    use crate::Board;
+    use crate::game_board::board::Board;
     use std::env;
 
     #[test]
