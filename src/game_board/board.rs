@@ -1,8 +1,8 @@
-use crate::game_board::bitboard::BitBoard;
+use crate::constants::pieces::{BIG_PIECE, BOTH, BP, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE, WK_CASTLE, WP};
+use crate::constants::squares::{A1, A8, C1, C8, D1, D8, F1, F8, G1, G8, H1, H8, NO_SQ};
 use crate::constants::{pieces, squares};
-use crate::constants::pieces::{BIG_PIECE, BOTH, BP, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE, WP};
-use crate::constants::squares::{A1, A8, C8, C1, G1, G8, D1, D8, F1, F8, H1, H8, NO_SQ};
-use crate::moves::gamemove::{MFLAG_EP, MFLAG_PS, GameMove};
+use crate::game_board::bitboard::BitBoard;
+use crate::moves::gamemove::{GameMove, MFLAG_EP, MFLAG_PS};
 use crate::moves::movegen::square_is_attacked;
 use crate::moves::validate::is_sq_on_board;
 use crate::utils::hashkeys::BoardHasher;
@@ -10,22 +10,14 @@ use crate::utils::piece_utils::{piece_is_king, piece_is_pawn};
 use crate::utils::square_utils::fr2sq;
 //Piece list isn't getting updated right?
 
-
 /// Code used for storing the general state of the board
 
-const CASTLE_PERM:[u8; 120] = [
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 13, 15, 15, 15, 12, 15, 15, 14, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15,  7, 15, 15, 15,  3, 15, 15, 11, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
-    15, 15, 15, 15, 15, 15, 15, 15, 15, 15
+const CASTLE_PERM: [u8; 120] = [
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 13, 15, 15,
+    15, 12, 15, 15, 14, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 7, 15, 15, 15, 3,
+    15, 15, 11, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
 ]; // For bitwise and with castle perm because castle perm is kept as 4 bits
 
 #[derive(Debug, Copy, Clone)]
@@ -36,7 +28,6 @@ pub struct PastMove {
     //Castle permission
     fifty_move: u64,
     pos_key: u64,
-
 }
 
 #[derive(Debug, Clone)]
@@ -70,11 +61,9 @@ pub struct Board {
     pub piece_list: [[u8; 18]; 13],
 
     hasher: BoardHasher,
-
 }
 
 impl Board {
-
     pub fn new() -> Board {
         let mut sq120_to_sq64: [u8; 120] = [65; 120];
         let mut sq64_to_sq120: [u8; 64] = [120; 64];
@@ -114,10 +103,14 @@ impl Board {
     }
 
     #[inline(always)]
-    pub fn sq64(&self, sq120:u8) -> u8 { self.sq120_to_sq64[sq120 as usize] }
+    pub fn sq64(&self, sq120: u8) -> u8 {
+        self.sq120_to_sq64[sq120 as usize]
+    }
 
     #[inline(always)]
-    pub fn sq120(&self, sq64:u8) -> u8 { self.sq64_to_sq120[sq64 as usize] }
+    pub fn sq120(&self, sq64: u8) -> u8 {
+        self.sq64_to_sq120[sq64 as usize]
+    }
 
     /// Resets the position to an empty board
     pub fn reset_position(&mut self) {
@@ -168,16 +161,24 @@ impl Board {
             if piece != squares::OFFBOARD && piece != pieces::EMPTY {
                 color = pieces::PIECE_COLOR[piece as usize] as usize;
 
-                if pieces::BIG_PIECE[piece as usize] { self.num_big_pieces[color] += 1; }
-                if pieces::MINOR_PIECE[piece as usize] { self.num_minor_pieces[color] += 1; }
-                if pieces::MAJOR_PIECE[piece as usize] { self.num_major_pieces[color] += 1; }
+                if pieces::BIG_PIECE[piece as usize] {
+                    self.num_big_pieces[color] += 1;
+                }
+                if pieces::MINOR_PIECE[piece as usize] {
+                    self.num_minor_pieces[color] += 1;
+                }
+                if pieces::MAJOR_PIECE[piece as usize] {
+                    self.num_major_pieces[color] += 1;
+                }
 
                 self.material[color] += pieces::VALUE[piece as usize];
 
                 self.piece_list[piece as usize][self.num_pieces[piece as usize] as usize] = sq;
                 self.num_pieces[piece as usize] += 1;
 
-                if piece == pieces::WK || piece == pieces::BK { self.king_sq[color] = sq; }
+                if piece == pieces::WK || piece == pieces::BK {
+                    self.king_sq[color] = sq;
+                }
 
                 if piece == pieces::WP || piece == pieces::BP {
                     self.bitboards[color].set_bit(self.sq64(sq));
@@ -225,13 +226,13 @@ impl Board {
                 '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' => {
                     piece = pieces::EMPTY;
                     count = (*c as char).to_digit(10).unwrap();
-                },
+                }
                 '/' | ' ' => {
                     rank -= 1;
                     file = squares::FILE_A as i32;
                     c = c.add(1);
                     continue;
-                },
+                }
                 _ => panic!("Inorrectly formatted string"),
             }
 
@@ -256,7 +257,9 @@ impl Board {
 
         // Castle permission
         for _ in 0..4 {
-            if *c as char == ' ' { break; }
+            if *c as char == ' ' {
+                break;
+            }
 
             match *c as char {
                 'K' => self.castle_perm |= pieces::WK_CASTLE,
@@ -265,6 +268,7 @@ impl Board {
                 'q' => self.castle_perm |= pieces::BQ_CASTLE,
                 _ => break,
             }
+
             c = c.add(1);
         }
         c = c.add(1);
@@ -280,7 +284,7 @@ impl Board {
                 'f' => file = 5,
                 'g' => file = 6,
                 'h' => file = 7,
-                _ => panic!("Incorrectly formatted string")
+                _ => panic!("Incorrectly formatted string"),
             }
             let rank_char: char = *c.add(1) as char;
             rank = rank_char.to_digit(10).unwrap() as i32 - 1; // Rank in string 1 index, so subtract 1
@@ -289,13 +293,15 @@ impl Board {
 
         //self.ply =
 
-        self.pos_key = self.hasher.generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
+        self.pos_key =
+            self.hasher
+                .generate_key(self.pieces, self.side, self.en_passant, self.castle_perm);
     }
 
     // Functions for making a move on the board
 
     #[inline(always)]
-    pub fn hash_piece(&mut self, pce:u8, sq:u8) {
+    pub fn hash_piece(&mut self, pce: u8, sq: u8) {
         self.pos_key ^= self.hasher.piece_keys[pce as usize][sq as usize];
     }
 
@@ -323,7 +329,7 @@ impl Board {
     ///
     /// returns: ()
     #[inline]
-    fn clear_piece(&mut self, sq:u8) {
+    fn clear_piece(&mut self, sq: u8) {
         let pce = self.pieces[sq as usize] as usize;
         let col = PIECE_COLOR[pce as usize] as usize;
         let mut t_pce_num = -1;
@@ -357,7 +363,8 @@ impl Board {
         }
 
         self.num_pieces[pce] -= 1;
-        self.piece_list[pce][t_pce_num as usize] = self.piece_list[pce][self.num_pieces[pce] as usize]; // Replace the removed piece with the last piece in the list, after decrementing the max index
+        self.piece_list[pce][t_pce_num as usize] =
+            self.piece_list[pce][self.num_pieces[pce] as usize]; // Replace the removed piece with the last piece in the list, after decrementing the max index
     }
 
     /// Adds a piece to the board state
@@ -406,7 +413,7 @@ impl Board {
     /// returns: ()
     ///
     #[inline]
-    pub fn move_piece(&mut self, from:u8, to:u8) {
+    pub fn move_piece(&mut self, from: u8, to: u8) {
         if !is_sq_on_board(from) || !is_sq_on_board(to) {
             panic!("Squares are off the board");
         }
@@ -450,14 +457,18 @@ impl Board {
         let from = past_move.game_move.origin();
         let to = past_move.game_move.destination();
 
-        if self.en_passant != NO_SQ { self.hash_en_passant(); }
+        if self.en_passant != NO_SQ {
+            self.hash_en_passant();
+        }
         self.hash_castle();
 
         self.castle_perm = past_move.castle_perm;
         self.fifty_move = past_move.fifty_move;
         self.en_passant = past_move.en_passant;
 
-        if self.en_passant != NO_SQ { self.hash_en_passant(); }
+        if self.en_passant != NO_SQ {
+            self.hash_en_passant();
+        }
         self.hash_castle();
 
         self.side ^= 1;
@@ -475,7 +486,7 @@ impl Board {
                 G1 => self.move_piece(F1, H1),
                 C8 => self.move_piece(D8, A8),
                 G8 => self.move_piece(F8, H8),
-                _  => panic!("Invalid castling move")
+                _ => panic!("Invalid castling move"),
             }
         }
 
@@ -494,7 +505,14 @@ impl Board {
 
         if promoted != EMPTY {
             self.clear_piece(from);
-            self.add_piece(from, if PIECE_COLOR[promoted as usize] == WHITE { WP } else { BP });
+            self.add_piece(
+                from,
+                if PIECE_COLOR[promoted as usize] == WHITE {
+                    WP
+                } else {
+                    BP
+                },
+            );
         }
     }
 
@@ -512,7 +530,7 @@ impl Board {
     ///
     /// ```
     #[inline]
-    pub fn make_move(&mut self, mov:GameMove) -> bool {
+    pub fn make_move(&mut self, mov: GameMove) -> bool {
         let from = mov.origin();
         let to = mov.destination();
         let side = self.side;
@@ -536,7 +554,9 @@ impl Board {
             }
         }
 
-        if self.en_passant != NO_SQ {self.hash_en_passant();}
+        if self.en_passant != NO_SQ {
+            self.hash_en_passant();
+        }
 
         self.hash_castle();
 
@@ -545,7 +565,7 @@ impl Board {
             game_move: mov,
             fifty_move: self.fifty_move,
             en_passant: self.en_passant,
-            castle_perm: self.castle_perm
+            castle_perm: self.castle_perm,
         });
 
         self.castle_perm &= CASTLE_PERM[from as usize];
@@ -605,11 +625,13 @@ impl Board {
 /// Prints the board
 impl std::fmt::Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        const PIECE_CHARS:[&str; 13] = [" . "," P "," N "," B "," R "," Q "," K ",
-            " p "," n "," b "," r "," q "," k "];
-        const SIDE_CHARS:[char; 3] = ['w','b','-'];
-        const RANK_CHARS:[char; 8] = ['1','2','3','4','5','6','7','8'];
-        const FILE_CHARS:[char; 8] = ['a','b','c','d','e','f','g','h'];
+        const PIECE_CHARS: [&str; 13] = [
+            " . ", " P ", " N ", " B ", " R ", " Q ", " K ", " p ", " n ", " b ", " r ", " q ",
+            " k ",
+        ];
+        const SIDE_CHARS: [char; 3] = ['w', 'b', '-'];
+        const RANK_CHARS: [char; 8] = ['1', '2', '3', '4', '5', '6', '7', '8'];
+        const FILE_CHARS: [char; 8] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
         let mut output = String::from("");
         for rank in (squares::RANK_1..=squares::RANK_8).rev() {
             for file in squares::FILE_A..squares::FILE_H + 1 {
@@ -627,7 +649,7 @@ impl std::fmt::Display for Board {
 /// TODO: need to add an assert for a valid hash key
 /// # Panic
 /// Will panic if any of the board's state seems to be incorrect
-pub fn check_board(board:&Board) -> bool {
+pub fn check_board(board: &Board) -> bool {
     let mut num_pieces = [0; 13];
     let mut big_pieces = [0; 2];
     let mut major_pieces = [0; 2];
@@ -657,9 +679,15 @@ pub fn check_board(board:&Board) -> bool {
         if piece as u8 != pieces::EMPTY {
             num_pieces[piece] += 1;
             let color = pieces::PIECE_COLOR[piece] as usize;
-            if pieces::BIG_PIECE[piece] { big_pieces[color] += 1; }
-            if pieces::MAJOR_PIECE[piece] { major_pieces[color] += 1; }
-            if pieces::MINOR_PIECE[piece] { minor_pieces[color] += 1; }
+            if pieces::BIG_PIECE[piece] {
+                big_pieces[color] += 1;
+            }
+            if pieces::MAJOR_PIECE[piece] {
+                major_pieces[color] += 1;
+            }
+            if pieces::MINOR_PIECE[piece] {
+                minor_pieces[color] += 1;
+            }
 
             material[color] += pieces::VALUE[piece];
         }
@@ -672,7 +700,10 @@ pub fn check_board(board:&Board) -> bool {
     pcount = pawns[pieces::BLACK_S].count_bits();
     assert_eq!(pcount, board.num_pieces[pieces::BP as usize]);
     pcount = pawns[pieces::BOTH_S].count_bits();
-    assert_eq!(pcount, board.num_pieces[pieces::BP as usize] + board.num_pieces[pieces::WP as usize]);
+    assert_eq!(
+        pcount,
+        board.num_pieces[pieces::BP as usize] + board.num_pieces[pieces::WP as usize]
+    );
 
     // check bitboards squares
 
@@ -688,18 +719,28 @@ pub fn check_board(board:&Board) -> bool {
 
     while pawns[pieces::BOTH_S].board > 0 {
         let sq64 = pawns[pieces::BOTH_S].pop_bit();
-        assert!(board.pieces[board.sq120(sq64) as usize] == pieces::BP ||
-            board.pieces[board.sq120(sq64) as usize] == pieces::WP);
+        assert!(
+            board.pieces[board.sq120(sq64) as usize] == pieces::BP
+                || board.pieces[board.sq120(sq64) as usize] == pieces::WP
+        );
     }
 
-    assert!(material[pieces::WHITE_S] == board.material[pieces::WHITE_S] &&
-        material[pieces::BLACK_S] == board.material[pieces::BLACK_S]);
-    assert!(minor_pieces[pieces::WHITE_S] == board.num_minor_pieces[pieces::WHITE_S] &&
-        minor_pieces[pieces::BLACK_S] == board.num_minor_pieces[pieces::BLACK_S]);
-    assert!(major_pieces[pieces::WHITE_S] == board.num_major_pieces[pieces::WHITE_S] &&
-        major_pieces[pieces::BLACK_S] == board.num_major_pieces[pieces::BLACK_S]);
-    assert!(big_pieces[pieces::WHITE_S] == board.num_big_pieces[pieces::WHITE_S] &&
-        big_pieces[pieces::BLACK_S] == board.num_big_pieces[pieces::BLACK_S]);
+    assert!(
+        material[pieces::WHITE_S] == board.material[pieces::WHITE_S]
+            && material[pieces::BLACK_S] == board.material[pieces::BLACK_S]
+    );
+    assert!(
+        minor_pieces[pieces::WHITE_S] == board.num_minor_pieces[pieces::WHITE_S]
+            && minor_pieces[pieces::BLACK_S] == board.num_minor_pieces[pieces::BLACK_S]
+    );
+    assert!(
+        major_pieces[pieces::WHITE_S] == board.num_major_pieces[pieces::WHITE_S]
+            && major_pieces[pieces::BLACK_S] == board.num_major_pieces[pieces::BLACK_S]
+    );
+    assert!(
+        big_pieces[pieces::WHITE_S] == board.num_big_pieces[pieces::WHITE_S]
+            && big_pieces[pieces::BLACK_S] == board.num_big_pieces[pieces::BLACK_S]
+    );
 
     assert!(board.side == pieces::WHITE || board.side == pieces::BLACK);
 
@@ -709,27 +750,38 @@ pub fn check_board(board:&Board) -> bool {
     //     (board.ranks_squares[board.en_passant as usize] == squares::RANK_3 &&
     //         board.side == pieces::BLACK));
 
-    assert_eq!(board.pieces[board.king_sq[pieces::WHITE_S] as usize], pieces::WK);
-    assert_eq!(board.pieces[board.king_sq[pieces::BLACK_S] as usize], pieces::BK);
+    assert_eq!(
+        board.pieces[board.king_sq[pieces::WHITE_S] as usize],
+        pieces::WK
+    );
+    assert_eq!(
+        board.pieces[board.king_sq[pieces::BLACK_S] as usize],
+        pieces::BK
+    );
     true
 }
 
 #[cfg(test)]
 mod test {
-    use crate::game_board::board::{Board, check_board, GameMove};
+    use crate::constants::pieces::{
+        BLACK, BLACK_S, BP, BQ_CASTLE, BR, EMPTY, WHITE, WHITE_S, WK_CASTLE, WP, WQ, WQ_CASTLE, WR,
+    };
+    use crate::constants::squares::{
+        FILE_B, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_SQ, OFFBOARD, RANK_1, RANK_2, RANK_3,
+        RANK_5, RANK_6, RANK_7, RANK_8,
+    };
     use crate::constants::{pieces, squares};
-    use crate::constants::pieces::{BLACK, BLACK_S, BP, BR, EMPTY, WHITE, WHITE_S, WP, WQ, WR};
-    use crate::constants::squares::{FILE_B, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_SQ, OFFBOARD, RANK_1, RANK_2, RANK_3, RANK_5, RANK_6, RANK_7, RANK_8};
     use crate::game_board::board::PastMove;
+    use crate::game_board::board::{check_board, Board, GameMove};
     use crate::moves::validate::is_sq_on_board;
     use crate::utils::square_utils::fr2sq;
 
     #[test]
     fn test_fr2sq() {
         let square = fr2sq(3, 5);
-        assert_eq!(square,
-                   74,
-                   "Did not convert file and rank into correct square"
+        assert_eq!(
+            square, 74,
+            "Did not convert file and rank into correct square"
         );
     }
 
@@ -740,14 +792,57 @@ mod test {
 
         let mut board = Board::new();
         unsafe { board.parse_fen(start) };
-        assert_eq!(board.pieces[23], pieces::WB as u8, "Did not correctly place white bishop on F1");
-        assert_eq!(board.pieces[squares::F3 as usize], pieces::WN as u8, "Did not correctly place white knight on F3");
-        assert_eq!(board.pieces[0], squares::OFFBOARD, "Did not preserve offboard values");
+        assert_eq!(
+            board.pieces[23],
+            pieces::WB as u8,
+            "Did not correctly place white bishop on F1"
+        );
+        assert_eq!(
+            board.pieces[squares::F3 as usize],
+            pieces::WN as u8,
+            "Did not correctly place white knight on F3"
+        );
+        assert_eq!(
+            board.pieces[0],
+            squares::OFFBOARD,
+            "Did not preserve offboard values"
+        );
         assert_eq!(board.side, 1, "Did not correctly set it as black's move");
-        assert_eq!(board.castle_perm, 7, "Did not correctly set castling permission");
-        assert_eq!(board.en_passant, squares::E3 as u8, "Did not correctly set en passant square");
+        assert_eq!(
+            board.castle_perm, 15,
+            "Did not correctly set castling permission"
+        );
+        assert_eq!(
+            board.en_passant,
+            squares::E3 as u8,
+            "Did not correctly set en passant square"
+        );
         //assert_eq!(board.)
         //assert_eq!(board.pawns[0].board, white_pawn_bb, "Did not correctly set position of white pawn bitboard");
+    }
+
+    #[test]
+    fn test_parse_fen_castling() {
+        let mut board = Board::new();
+        unsafe {
+            board.parse_fen("4k2r/8/8/8/8/8/8/4K3 w k - 0 1");
+        }
+        board.update_material_list();
+        assert_eq!(
+            board.castle_perm & WK_CASTLE,
+            0,
+            "Incorrectly has white king castling permission"
+        );
+        assert_eq!(
+            board.castle_perm & WQ_CASTLE,
+            0,
+            "Incorrectly has white queen castling permission"
+        );
+        assert_eq!(
+            board.castle_perm & BQ_CASTLE,
+            0,
+            "Incorrectly has black queen castling permission"
+        );
     }
 
     #[test]
@@ -760,7 +855,10 @@ mod test {
         board.reset_position();
 
         for piece in board.pieces {
-            assert!(piece == OFFBOARD || piece == EMPTY, "Did not reset all squares to offboard");
+            assert!(
+                piece == OFFBOARD || piece == EMPTY,
+                "Did not reset all squares to offboard"
+            );
         }
 
         for bitboard in board.bitboards {
@@ -789,18 +887,57 @@ mod test {
         unsafe { board.parse_fen(start) };
         board.update_material_list();
         //King is counted as a major piece
-        assert_eq!(board.num_major_pieces[0], 4, "Did not update with correct number of white major pieces");
-        assert_eq!(board.num_major_pieces[1], 4, "Did not update with correct number of black major pieces");
-        assert_eq!(board.num_minor_pieces[0], 4, "Did not update with correct number of white minor pieces");
-        assert_eq!(board.num_minor_pieces[1], 4, "Did not update with correct number of black minor pieces");
-        assert_eq!(board.num_big_pieces[0], 8, "Did not update with correct number of white big pieces");
-        assert_eq!(board.num_big_pieces[1], 8, "Did not update with correct number of black big pieces");
-        assert_eq!(board.material[0], 54200, "Did not correctly set material value for white");
-        assert_eq!(board.material[1], 54200, "Did not correctly set material value for black");
-        assert_eq!(board.piece_list[1][4], 35, "Did not correctly set square for white pawn");
-        assert_eq!(format!("{:b}",board.bitboards[pieces::WHITE as usize].board), format!("{:b}", RANK_2), "Did not set white bitboard correctly");
-        assert_eq!(format!("{:b}",board.bitboards[pieces::BLACK as usize].board), format!("{:b}", RANK_7), "Did not set black bitboard correctly");
-        assert_eq!(format!("{:b}",board.bitboards[pieces::BOTH as usize].board), format!("{:b}", both_ranks), "Did not set both bitboard correctly");
+        assert_eq!(
+            board.num_major_pieces[0], 4,
+            "Did not update with correct number of white major pieces"
+        );
+        assert_eq!(
+            board.num_major_pieces[1], 4,
+            "Did not update with correct number of black major pieces"
+        );
+        assert_eq!(
+            board.num_minor_pieces[0], 4,
+            "Did not update with correct number of white minor pieces"
+        );
+        assert_eq!(
+            board.num_minor_pieces[1], 4,
+            "Did not update with correct number of black minor pieces"
+        );
+        assert_eq!(
+            board.num_big_pieces[0], 8,
+            "Did not update with correct number of white big pieces"
+        );
+        assert_eq!(
+            board.num_big_pieces[1], 8,
+            "Did not update with correct number of black big pieces"
+        );
+        assert_eq!(
+            board.material[0], 54200,
+            "Did not correctly set material value for white"
+        );
+        assert_eq!(
+            board.material[1], 54200,
+            "Did not correctly set material value for black"
+        );
+        assert_eq!(
+            board.piece_list[1][4], 35,
+            "Did not correctly set square for white pawn"
+        );
+        assert_eq!(
+            format!("{:b}", board.bitboards[pieces::WHITE as usize].board),
+            format!("{:b}", RANK_2),
+            "Did not set white bitboard correctly"
+        );
+        assert_eq!(
+            format!("{:b}", board.bitboards[pieces::BLACK as usize].board),
+            format!("{:b}", RANK_7),
+            "Did not set black bitboard correctly"
+        );
+        assert_eq!(
+            format!("{:b}", board.bitboards[pieces::BOTH as usize].board),
+            format!("{:b}", both_ranks),
+            "Did not set both bitboard correctly"
+        );
     }
 
     #[test]
@@ -814,13 +951,37 @@ mod test {
         let before = board.clone();
         let sq = board.sq120(0);
         board.clear_piece(sq);
-        assert_eq!(before.num_major_pieces[WHITE as usize] - 1, board.num_major_pieces[WHITE as usize], "Did not decrement number of major pieces");
-        assert_eq!(before.num_big_pieces[WHITE as usize] - 1, board.num_big_pieces[WHITE as usize], "Did not decrement number of big pieces");
-        assert_eq!(before.num_pieces[WR as usize] - 1, board.num_pieces[WR as usize], "Did not decrement number of rooks");
-        assert_eq!(before.num_major_pieces[BLACK as usize], board.num_major_pieces[BLACK as usize], "Decremented number of major pieces for wrong color");
-        assert_eq!(before.num_minor_pieces[WHITE as usize], board.num_minor_pieces[WHITE as usize], "Decremented wrong category of piece");
-        assert_eq!(before.bitboards[WHITE as usize].board, board.bitboards[WHITE as usize].board, "Changed bitboard when piece wasn't a pawn");
-        assert_eq!(before.piece_list[WR as usize][1], board.piece_list[WR as usize][0], "Did not shorten piece list correctly");
+        assert_eq!(
+            before.num_major_pieces[WHITE as usize] - 1,
+            board.num_major_pieces[WHITE as usize],
+            "Did not decrement number of major pieces"
+        );
+        assert_eq!(
+            before.num_big_pieces[WHITE as usize] - 1,
+            board.num_big_pieces[WHITE as usize],
+            "Did not decrement number of big pieces"
+        );
+        assert_eq!(
+            before.num_pieces[WR as usize] - 1,
+            board.num_pieces[WR as usize],
+            "Did not decrement number of rooks"
+        );
+        assert_eq!(
+            before.num_major_pieces[BLACK as usize], board.num_major_pieces[BLACK as usize],
+            "Decremented number of major pieces for wrong color"
+        );
+        assert_eq!(
+            before.num_minor_pieces[WHITE as usize], board.num_minor_pieces[WHITE as usize],
+            "Decremented wrong category of piece"
+        );
+        assert_eq!(
+            before.bitboards[WHITE as usize].board, board.bitboards[WHITE as usize].board,
+            "Changed bitboard when piece wasn't a pawn"
+        );
+        assert_eq!(
+            before.piece_list[WR as usize][1], board.piece_list[WR as usize][0],
+            "Did not shorten piece list correctly"
+        );
     }
 
     #[test]
@@ -829,15 +990,28 @@ mod test {
         let fen2 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
         let mut board1 = Board::new();
         let mut board2 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
-        unsafe { board2.parse_fen(fen2); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
+        unsafe {
+            board2.parse_fen(fen2);
+        }
         board1.update_material_list();
         board2.update_material_list();
         let sq = board1.sq120(8);
         board1.clear_piece(sq);
-        assert_eq!(board1.bitboards, board2.bitboards, "Did not remove pawn from bitboards");
-        assert_eq!(board1.num_pieces, board2.num_pieces, "Did not update number of pieces");
-        assert_eq!(board1.piece_list[WP as usize][0], board2.piece_list[WP as usize][6], "Did not update piece list correctly");
+        assert_eq!(
+            board1.bitboards, board2.bitboards,
+            "Did not remove pawn from bitboards"
+        );
+        assert_eq!(
+            board1.num_pieces, board2.num_pieces,
+            "Did not update number of pieces"
+        );
+        assert_eq!(
+            board1.piece_list[WP as usize][0], board2.piece_list[WP as usize][6],
+            "Did not update piece list correctly"
+        );
     }
 
     #[test]
@@ -846,15 +1020,28 @@ mod test {
         let fen2 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
         let mut board1 = Board::new();
         let mut board2 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
-        unsafe { board2.parse_fen(fen2); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
+        unsafe {
+            board2.parse_fen(fen2);
+        }
         board1.update_material_list();
         board2.update_material_list();
         let sq = board1.sq120(8);
         board2.add_piece(sq, WP);
-        assert_eq!(board1.bitboards, board2.bitboards, "Did not remove pawn from bitboards");
-        assert_eq!(board1.num_pieces, board2.num_pieces, "Did not update number of pieces");
-        assert_eq!(board1.piece_list[WP as usize][0], board2.piece_list[WP as usize][7], "Did not update piece list correctly");
+        assert_eq!(
+            board1.bitboards, board2.bitboards,
+            "Did not remove pawn from bitboards"
+        );
+        assert_eq!(
+            board1.num_pieces, board2.num_pieces,
+            "Did not update number of pieces"
+        );
+        assert_eq!(
+            board1.piece_list[WP as usize][0], board2.piece_list[WP as usize][7],
+            "Did not update piece list correctly"
+        );
     }
 
     #[test]
@@ -863,17 +1050,36 @@ mod test {
         let fen2 = "1nbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
         let mut board1 = Board::new();
         let mut board2 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
-        unsafe { board2.parse_fen(fen2); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
+        unsafe {
+            board2.parse_fen(fen2);
+        }
         board1.update_material_list();
         board2.update_material_list();
         let sq = board1.sq120(56);
         board2.add_piece(sq, BR);
-        assert_eq!(board1.piece_list[BR as usize][0], board2.piece_list[BR as usize][1], "Did not update piece list correctly");
-        assert_eq!(board1.num_pieces, board2.num_pieces, "Did not update number of pieces");
-        assert_eq!(board1.num_big_pieces, board2.num_big_pieces, "Did not update number of big pieces");
-        assert_eq!(board1.num_major_pieces, board2.num_major_pieces, "Did not update number of major pieces");
-        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
+        assert_eq!(
+            board1.piece_list[BR as usize][0], board2.piece_list[BR as usize][1],
+            "Did not update piece list correctly"
+        );
+        assert_eq!(
+            board1.num_pieces, board2.num_pieces,
+            "Did not update number of pieces"
+        );
+        assert_eq!(
+            board1.num_big_pieces, board2.num_big_pieces,
+            "Did not update number of big pieces"
+        );
+        assert_eq!(
+            board1.num_major_pieces, board2.num_major_pieces,
+            "Did not update number of major pieces"
+        );
+        assert_eq!(
+            board1.pieces, board2.pieces,
+            "Did not update pieces correctly"
+        );
     }
 
     #[test]
@@ -882,14 +1088,21 @@ mod test {
         let fen2 = "1nbqkbnr/rp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
         let mut board1 = Board::new();
         let mut board2 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
-        unsafe { board2.parse_fen(fen2); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
+        unsafe {
+            board2.parse_fen(fen2);
+        }
         board1.update_material_list();
         board2.update_material_list();
         let from = board1.sq120(56);
         let to = board1.sq120(48);
         board1.move_piece(from, to);
-        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
+        assert_eq!(
+            board1.pieces, board2.pieces,
+            "Did not update pieces correctly"
+        );
     }
 
     #[test]
@@ -898,15 +1111,25 @@ mod test {
         let fen2 = "rnbqkbnr/1p1p1pPp/p7/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
         let mut board1 = Board::new();
         let mut board2 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
-        unsafe { board2.parse_fen(fen2); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
+        unsafe {
+            board2.parse_fen(fen2);
+        }
         board1.update_material_list();
         board2.update_material_list();
         let from = board1.sq120(48);
         let to = board1.sq120(40);
         board1.move_piece(from, to);
-        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
-        assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
+        assert_eq!(
+            board1.pieces, board2.pieces,
+            "Did not update pieces correctly"
+        );
+        assert_eq!(
+            board1.bitboards, board2.bitboards,
+            "Did not update bitboards correctly"
+        );
     }
 
     #[test]
@@ -916,8 +1139,12 @@ mod test {
         let mut board1 = Board::new();
         let mut board2 = Board::new();
 
-        unsafe { board1.parse_fen(fen1); }
-        unsafe { board2.parse_fen(fen2); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
+        unsafe {
+            board2.parse_fen(fen2);
+        }
         board1.update_material_list();
         board2.update_material_list();
         let from = fr2sq(FILE_F, RANK_5);
@@ -925,11 +1152,21 @@ mod test {
         let mov = GameMove::new(from, to, 0, 0, 0x40000);
 
         board1.make_move(mov);
-        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
-        assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
+        assert_eq!(
+            board1.pieces, board2.pieces,
+            "Did not update pieces correctly"
+        );
+        assert_eq!(
+            board1.bitboards, board2.bitboards,
+            "Did not update bitboards correctly"
+        );
         assert_eq!(board1.fifty_move, 1, "Did not update fifty move");
         assert_eq!(board1.side, BLACK, "Did not change side");
-        assert_eq!(board1.history.pop().unwrap().game_move, mov, "Did not update move histroy");
+        assert_eq!(
+            board1.history.pop().unwrap().game_move,
+            mov,
+            "Did not update move histroy"
+        );
     }
 
     #[test]
@@ -938,8 +1175,12 @@ mod test {
         let fen2 = "rnbqkbnr/pp1p1pPp/4P3/2p5/1P1P4/3P4/2P1P3/RNBQKBNR b KQkq - 0 10";
         let mut board1 = Board::new();
         let mut board2 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
-        unsafe { board2.parse_fen(fen2); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
+        unsafe {
+            board2.parse_fen(fen2);
+        }
         board1.update_material_list();
         board2.update_material_list();
         let from = fr2sq(FILE_F, RANK_5);
@@ -950,13 +1191,19 @@ mod test {
             en_passant: NO_SQ,
             castle_perm: board1.castle_perm,
             fifty_move: board1.fifty_move,
-            pos_key: board1.pos_key
+            pos_key: board1.pos_key,
         });
         board2.ply = 1;
         board2.history_ply = 1;
         board2.undo_move();
-        assert_eq!(board1.pieces, board2.pieces, "Did not update pieces correctly");
-        assert_eq!(board1.bitboards, board2.bitboards, "Did not update bitboards correctly");
+        assert_eq!(
+            board1.pieces, board2.pieces,
+            "Did not update pieces correctly"
+        );
+        assert_eq!(
+            board1.bitboards, board2.bitboards,
+            "Did not update bitboards correctly"
+        );
         assert_eq!(board2.fifty_move, 0, "Did not update fifty move");
         assert_eq!(board2.side, WHITE, "Did not change side");
     }
@@ -966,12 +1213,23 @@ mod test {
         let fen1 = "rnb1kbnr/pp1p1pPp/8/2p1pPq1/1P1P4/2NP4/2P1P3/R1BQKBNR w KQkq - 2 11";
         let mov = GameMove::new(fr2sq(FILE_E, RANK_1), fr2sq(FILE_D, RANK_2), 0, 0, 0);
         let mut board1 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
         let board2 = board1.clone();
         board1.make_move(mov);
-        assert_eq!(board1.pieces, board2.pieces, "Changed pieces with invalid move");
-        assert_eq!(board1.bitboards, board2.bitboards, "Changed bitboard with invalid move");
-        assert_eq!(board1.fifty_move, 0, "Updated fifty moves with invalid move");
+        assert_eq!(
+            board1.pieces, board2.pieces,
+            "Changed pieces with invalid move"
+        );
+        assert_eq!(
+            board1.bitboards, board2.bitboards,
+            "Changed bitboard with invalid move"
+        );
+        assert_eq!(
+            board1.fifty_move, 0,
+            "Updated fifty moves with invalid move"
+        );
         assert_eq!(board1.side, WHITE, "Changed side with invalid move");
         assert_eq!(board1.history.len(), 0, "Invalid move remained in board");
     }
@@ -979,19 +1237,75 @@ mod test {
     fn test_make_and_undo() {
         let fen1 = "rnbqkbnr/pp1p1pPp/8/2p1pP2/1P1P4/3P4/2P1P3/RNBQKBNR w KQkq e6 0 10";
         let mut board1 = Board::new();
-        unsafe { board1.parse_fen(fen1); }
+        unsafe {
+            board1.parse_fen(fen1);
+        }
         board1.update_material_list();
         let board2 = board1.clone();
         let mut moves = vec![];
-        moves.push(GameMove::new(fr2sq(FILE_F, RANK_5), fr2sq(FILE_E, RANK_6), 0, 0, 0x40000));
-        moves.push(GameMove::new(fr2sq(FILE_B, RANK_7), fr2sq(FILE_B, RANK_5), 0, 0, 0x80000));
-        moves.push(GameMove::new(fr2sq(FILE_G, RANK_1), fr2sq(FILE_F, RANK_3), 0, 0, 0));
-        moves.push(GameMove::new(fr2sq(FILE_D, RANK_7), fr2sq(FILE_E, RANK_6), WP, 0, 0));
-        moves.push(GameMove::new(fr2sq(FILE_F, RANK_1), fr2sq(FILE_H, RANK_3), 0, 0, 0));
-        moves.push( GameMove::new(fr2sq(FILE_E, RANK_8), fr2sq(FILE_E, RANK_7), 0, 0, 0));
-        moves.push(GameMove::new(fr2sq(FILE_E, RANK_1), fr2sq(FILE_G, RANK_1), 0, 0, 0x1000000));
-        moves.push(GameMove::new(fr2sq(FILE_D, RANK_8), fr2sq(FILE_E, RANK_8), 0, 0, 0));
-        moves.push(GameMove::new(fr2sq(FILE_G, RANK_7), fr2sq(FILE_H, RANK_8), BR, WQ, 0x40000));
+        moves.push(GameMove::new(
+            fr2sq(FILE_F, RANK_5),
+            fr2sq(FILE_E, RANK_6),
+            0,
+            0,
+            0x40000,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_B, RANK_7),
+            fr2sq(FILE_B, RANK_5),
+            0,
+            0,
+            0x80000,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_G, RANK_1),
+            fr2sq(FILE_F, RANK_3),
+            0,
+            0,
+            0,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_D, RANK_7),
+            fr2sq(FILE_E, RANK_6),
+            WP,
+            0,
+            0,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_F, RANK_1),
+            fr2sq(FILE_H, RANK_3),
+            0,
+            0,
+            0,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_E, RANK_8),
+            fr2sq(FILE_E, RANK_7),
+            0,
+            0,
+            0,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_E, RANK_1),
+            fr2sq(FILE_G, RANK_1),
+            0,
+            0,
+            0x1000000,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_D, RANK_8),
+            fr2sq(FILE_E, RANK_8),
+            0,
+            0,
+            0,
+        ));
+        moves.push(GameMove::new(
+            fr2sq(FILE_G, RANK_7),
+            fr2sq(FILE_H, RANK_8),
+            BR,
+            WQ,
+            0x40000,
+        ));
 
         for mov in &moves {
             board1.make_move(*mov);
@@ -999,8 +1313,14 @@ mod test {
         for i in 0..moves.len() {
             board1.undo_move();
         }
-        assert_eq!(board1.pieces, board2.pieces, "Did not end up with same pieces after undo moves");
-        assert_eq!(board1.bitboards, board2.bitboards, "Did not end up with same bitboards after undo moves");
+        assert_eq!(
+            board1.pieces, board2.pieces,
+            "Did not end up with same pieces after undo moves"
+        );
+        assert_eq!(
+            board1.bitboards, board2.bitboards,
+            "Did not end up with same bitboards after undo moves"
+        );
         assert_eq!(board1.fifty_move, 0, "Did not undo fifty moves");
         assert_eq!(board1.side, WHITE, "Did not undo side");
         assert_eq!(board1.history.len(), 0, "Didn't wind back history");

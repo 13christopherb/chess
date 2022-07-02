@@ -75,7 +75,8 @@ pub fn square_is_attacked(sq: u8, side: u8, pces: &[u8; 120]) -> bool {
 
     for dir in PIECE_DIR[WK as usize] {
         let pce = pces[(t_sq + dir) as usize];
-        if pce == OFFBOARD { break; }
+
+        if pce == OFFBOARD { continue; }
         if is_king(pce) && is_same_color(pce, side) {
             return true;
         }
@@ -384,7 +385,7 @@ pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
         generate_bp_moves(pos, list);
 
         if pos.castle_perm & BK_CASTLE != 0 {
-            generate_castle_move(&pos, WHITE, &vec!(F8, G8), G1, G8, list);
+            generate_castle_move(&pos, WHITE, &vec!(F8, G8), E8, G8, list);
         }
 
         if pos.castle_perm & BQ_CASTLE != 0 {
@@ -395,6 +396,7 @@ pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
         generate_nonsliding_moves(pos, list, BLACK);
     }
 }
+
 
 #[cfg(test)]
 mod test {
@@ -773,6 +775,21 @@ mod test {
     }
 
     #[test]
+    fn test_black_king_attacking() {
+        let mut board = Board::new();
+        unsafe {board.parse_fen("8/8/8/8/8/8/6k1/4K2R w K - 0 1 ");}
+        board.update_material_list();
+        assert!(square_is_attacked(fr2sq(FILE_F, RANK_1), BLACK, &board.pieces), "Did not find king attacking left down");
+        assert!(square_is_attacked(fr2sq(FILE_G, RANK_1), BLACK, &board.pieces), "Did not find king attacking down");
+        assert!(square_is_attacked(fr2sq(FILE_H, RANK_1), BLACK, &board.pieces), "Did not find king attacking right down");
+        assert!(square_is_attacked(fr2sq(FILE_F, RANK_2), BLACK, &board.pieces), "Did not find king attacking left");
+        assert!(square_is_attacked(fr2sq(FILE_H, RANK_2), BLACK, &board.pieces), "Did not find king attacking right");
+        assert!(square_is_attacked(fr2sq(FILE_F, RANK_3), BLACK, &board.pieces), "Did not find king attacking left up");
+        assert!(square_is_attacked(fr2sq(FILE_G, RANK_3), BLACK, &board.pieces), "Did not find king attacking center up");
+        assert!(square_is_attacked(fr2sq(FILE_H, RANK_3), BLACK, &board.pieces), "Did not find king attacking right up");
+    }
+
+    #[test]
     fn test_without_king_attacking() {
         let pces = init_pces();
         assert_eq!(square_is_attacked(fr2sq(FILE_D, RANK_5),
@@ -781,6 +798,18 @@ mod test {
         assert_eq!(square_is_attacked(fr2sq(FILE_F, RANK_7),
                                       pieces::WHITE, &pces), false,
                    "incorrectly find the king of the wrong color attacking a square");
+    }
+
+    #[test]
+    fn test_white_castling_with_no_rook() {
+        let mut board = Board::new();
+        unsafe {board.parse_fen("4k2r/8/8/8/8/8/8/4K3 w k - 0 1");}
+        board.update_material_list();
+        let mut move_list:Vec<GameMove> = Vec::new();
+        generate_all_moves(&board, &mut move_list);
+        for mov in move_list {
+            assert!(!mov.is_castle_move(), "Incorrectly found a white castling move when there is no rook: {}", mov);
+        }
     }
 }
 

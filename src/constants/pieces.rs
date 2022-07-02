@@ -59,8 +59,8 @@ pub const PIECE_DIR:[[i32; 8]; 13] = [
 pub const NUM_DIR:[usize; 13] = [0, 0, 8, 4, 4, 8, 8, 0, 8, 4, 4, 8, 8];
 pub const WK_CASTLE:u8 = 1;
 pub const WQ_CASTLE:u8 = 2;
-pub const BK_CASTLE:u8 = 3;
-pub const BQ_CASTLE:u8 = 4;
+pub const BK_CASTLE:u8 = 4;
+pub const BQ_CASTLE:u8 = 8;
 
 
 
