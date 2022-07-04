@@ -356,7 +356,7 @@ fn generate_nonsliding_moves(pos: &Board, list: &mut Vec<GameMove>, side: u8) {
 
 #[inline(always)]
 fn generate_castle_move(pos: &Board, side: u8, sqs: &[u8], from: u8, to: u8, list: &mut Vec<GameMove>) {
-    if !sqs.iter().any(|x| pos.pieces[*x as usize] != EMPTY) && !sqs.iter().any(|x| square_is_attacked(*x, side, &pos.pieces)) {
+    if !sqs.iter().any(|x| pos.pieces[*x as usize] != EMPTY) && !sqs.split_last().unwrap().1.iter().any(|x| square_is_attacked(*x, side, &pos.pieces)) {
         add_quiet_move(
             pos,
             GameMove::new(from, to, EMPTY, EMPTY, MFLAG_CA),
@@ -371,12 +371,14 @@ pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
     if pos.side == WHITE {
         generate_wp_moves(pos, list); // Pawns have a lot of special rules for movement, best to write specific functions
 
-        if pos.castle_perm & WK_CASTLE != 0 {
-            generate_castle_move(&pos, BLACK, &vec!(F1, G1), E1, G1, list);
-        }
+        if !square_is_attacked(E1, BLACK, &pos.pieces) {
+            if pos.castle_perm & WK_CASTLE != 0 {
+                generate_castle_move(&pos, BLACK, &vec!(F1, G1), E1, G1, list);
+            }
 
-        if pos.castle_perm & WQ_CASTLE != 0 {
-            generate_castle_move(&pos, BLACK, &vec!(D1, C1, B1), E1, C1, list);
+            if pos.castle_perm & WQ_CASTLE != 0  {
+                generate_castle_move(&pos, BLACK, &vec!(D1, C1, B1), E1, C1, list);
+            }
         }
 
         generate_sliding_moves(pos, list, WHITE);
@@ -384,12 +386,14 @@ pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
     } else {
         generate_bp_moves(pos, list);
 
-        if pos.castle_perm & BK_CASTLE != 0 {
-            generate_castle_move(&pos, WHITE, &vec!(F8, G8), E8, G8, list);
-        }
+        if !square_is_attacked(E8, WHITE, &pos.pieces) {
+            if pos.castle_perm & BK_CASTLE != 0 {
+                generate_castle_move(&pos, WHITE, &vec!(F8, G8), E8, G8, list);
+            }
 
-        if pos.castle_perm & BQ_CASTLE != 0 {
-            generate_castle_move(&pos, WHITE, &vec!(D8, C8, B8), E8, C8, list);
+            if pos.castle_perm & BQ_CASTLE != 0 {
+                generate_castle_move(&pos, WHITE, &vec!(D8, C8, B8), E8, C8, list);
+            }
         }
 
         generate_sliding_moves(pos, list, BLACK);

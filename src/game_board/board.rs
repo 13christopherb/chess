@@ -253,10 +253,12 @@ impl Board {
         assert!(*c as char == 'w' || *c as char == 'b');
 
         self.side = if *c as char == 'w' { 0 } else { 1 };
+
         c = c.add(2);
 
         // Castle permission
         for _ in 0..4 {
+
             if *c as char == ' ' {
                 break;
             }
@@ -266,11 +268,13 @@ impl Board {
                 'Q' => self.castle_perm |= pieces::WQ_CASTLE,
                 'k' => self.castle_perm |= pieces::BK_CASTLE,
                 'q' => self.castle_perm |= pieces::BQ_CASTLE,
+                '-' => self.castle_perm = 0,
                 _ => break,
             }
 
             c = c.add(1);
         }
+
         c = c.add(1);
 
         // En passant
