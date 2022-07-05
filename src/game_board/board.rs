@@ -1,9 +1,9 @@
-use crate::constants::pieces::{BIG_PIECE, BOTH, BP, EMPTY, MAJOR_PIECE, PIECE_COLOR, VALUE, WHITE, WK_CASTLE, WP};
+use crate::constants::pieces::{*};
 use crate::constants::squares::{A1, A8, C1, C8, D1, D8, F1, F8, G1, G8, H1, H8, NO_SQ};
 use crate::constants::{pieces, squares};
 use crate::game_board::bitboard::BitBoard;
 use crate::moves::gamemove::{GameMove, MFLAG_EP, MFLAG_PS};
-use crate::moves::movegen::square_is_attacked;
+use crate::moves::movegen::{generate_all_moves, square_is_attacked};
 use crate::moves::validate::is_sq_on_board;
 use crate::utils::hashkeys::BoardHasher;
 use crate::utils::piece_utils::{piece_is_king, piece_is_pawn};
@@ -1178,6 +1178,7 @@ mod test {
             mov,
             "Did not update move histroy"
         );
+        assert_eq!(board1.material, board2.material, "Did not update material correctly");
     }
 
     #[test]

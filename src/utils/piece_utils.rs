@@ -6,8 +6,10 @@ pub fn piece_is_pawn(piece:u8) -> bool { PAWN_NUMBER[piece as usize] }
 #[inline(always)]
 pub fn piece_is_knight(piece:u8) -> bool { KNIGHT_NUMBER[piece as usize] }
 
+
 #[inline(always)]
 pub fn piece_is_king(piece:u8) -> bool { KING_NUMBER[piece as usize] }
+
 
 #[cfg(test)]
 mod test {
