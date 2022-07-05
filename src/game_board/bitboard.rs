@@ -1,10 +1,30 @@
 /// Module for bitboards which use a 64 bit unsigned integer where each bit represents the
 /// presence of a piece for one particular square.
 
-use crate::utils::bit_operations::bitscan_forward;
 use crate::game_board::board::Board;
 use crate::constants::{squares};
 use crate::utils::square_utils::fr2sq;
+
+
+const MULTIPLICATOR:u64 = 0x03f79d71b4cb0a89;
+
+static DEBRUIJ_TABLE: &[u8] = &[
+    0, 47,  1, 56, 48, 27,  2, 60,
+    57, 49, 41, 37, 28, 16,  3, 61,
+    54, 58, 35, 52, 50, 42, 21, 44,
+    38, 32, 29, 23, 17, 11,  4, 62,
+    46, 55, 26, 59, 40, 36, 15, 53,
+    34, 51, 20, 43, 31, 22, 10, 45,
+    25, 39, 14, 33, 19, 30,  9, 24,
+    13, 18,  8, 12,  7,  6,  5, 63
+];
+
+pub fn bitscan_forward(bits:u64) -> u8 {
+    let mut lsb = bits ^ (bits - 1);
+    lsb = lsb.wrapping_mul(MULTIPLICATOR);
+    lsb >>= 58;
+    DEBRUIJ_TABLE[lsb as usize]
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct BitBoard {
@@ -92,7 +112,17 @@ impl std::fmt::Display for BitBoard {
 
 #[cfg(test)]
 mod test {
-    use crate::game_board::bitboard::BitBoard;
+    use crate::game_board::bitboard::{BitBoard, bitscan_forward};
+
+    #[test]
+    fn test_bitscan_forward() {
+        let index = bitscan_forward(0x1000);
+        assert_eq!(index,
+                   12,
+                   "Did not correctly find index of least significant bit"
+        );
+    }
+
 
     #[test]
     fn test_reset() {
