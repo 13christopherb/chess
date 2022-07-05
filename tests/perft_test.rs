@@ -59,10 +59,10 @@ fn perft(depth: u8, board: &mut Board, movs: & Vec<GameMove>) -> u64 {
 
         move_number += perft(depth - 1, board, &mov_list);
 
-        for m in mov_list {
-            print!("{}=> ", m);
-        }
-        print!("\n");
+        // for m in mov_list {
+        //     print!("{}=> ", m);
+        // }
+        // print!("\n");
         board.undo_move();
     }
     move_number
@@ -76,11 +76,11 @@ fn perft_test() {
         .filter_map(|x| x.clone().ok())
         .collect();
 
-    for i in 2..positions.len() {
+    for i in 0..positions.len() {
         let mut board = Board::new();
         unsafe{ board.parse_fen(positions[i].fen.as_str()) };
         board.update_material_list();
-        for j in 0..4 {
+        for j in 0..7 {
             let move_number = perft((j + 1) as u8, &mut board, &Vec::new());
             assert_eq!(move_number, positions[i].nums[j], "Did not find ocrrect number of moves for position {} at depth {}", i, j);
         }

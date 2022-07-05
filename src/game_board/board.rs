@@ -591,7 +591,7 @@ impl Board {
         self.ply += 1;
 
         if piece_is_pawn(self.pieces[from as usize]) {
-            if mov.is_en_passant() {
+            if mov.is_pawn_start() {
                 if side == WHITE {
                     self.en_passant = from + 10;
                 } else {
@@ -770,10 +770,7 @@ mod test {
     use crate::constants::pieces::{
         BLACK, BLACK_S, BP, BQ_CASTLE, BR, EMPTY, WHITE, WHITE_S, WK_CASTLE, WP, WQ, WQ_CASTLE, WR,
     };
-    use crate::constants::squares::{
-        FILE_B, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_SQ, OFFBOARD, RANK_1, RANK_2, RANK_3,
-        RANK_5, RANK_6, RANK_7, RANK_8,
-    };
+    use crate::constants::squares::{A2, A3, A4, FILE_B, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_SQ, OFFBOARD, RANK_1, RANK_2, RANK_3, RANK_5, RANK_6, RANK_7, RANK_8};
     use crate::constants::{pieces, squares};
     use crate::game_board::board::PastMove;
     use crate::game_board::board::{check_board, Board, GameMove};
@@ -1134,6 +1131,16 @@ mod test {
             board1.bitboards, board2.bitboards,
             "Did not update bitboards correctly"
         );
+    }
+
+    #[test]
+    fn test_en_passant_move() {
+        let mut board = Board::new();
+        unsafe { board.parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 ") }
+        board.update_material_list();
+        let mut mov = GameMove::new(A2, A4, 0, 0, 0x80000);
+        board.make_move(mov);
+        assert_eq!(board.en_passant, A3);
     }
 
     #[test]

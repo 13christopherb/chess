@@ -366,6 +366,7 @@ fn generate_castle_move(pos: &Board, side: u8, sqs: &[u8], from: u8, to: u8, lis
 }
 
 pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
+    //TODO: Fix en passant
     //assert!(check_board(pos));
 
     if pos.side == WHITE {
