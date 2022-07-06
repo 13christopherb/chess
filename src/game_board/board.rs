@@ -1,3 +1,4 @@
+use crate::alphabeta::pvtable::PVTable;
 use crate::constants::pieces::{*};
 use crate::constants::squares::{A1, A8, C1, C8, D1, D8, F1, F8, G1, G8, H1, H8, NO_SQ};
 use crate::constants::{pieces, squares};
@@ -61,6 +62,8 @@ pub struct Board {
     pub piece_list: [[u8; 18]; 13],
 
     hasher: BoardHasher,
+
+    pvtable: PVTable
 }
 
 impl Board {
@@ -99,6 +102,7 @@ impl Board {
             sq64_to_sq120,
             piece_list: [[0; 18]; 13],
             hasher: BoardHasher::new(),
+            pvtable: PVTable::new(),
         }
     }
 
