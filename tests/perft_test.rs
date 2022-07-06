@@ -3,6 +3,7 @@ use std::env;
 use std::fs;
 use std::num::ParseIntError;
 use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
 use chess::constants::squares::{FILE_E, FILE_F, RANK_8};
 use chess::moves::gamemove::GameMove;
 use chess::moves::movegen::generate_all_moves;
@@ -59,10 +60,6 @@ fn perft(depth: u8, board: &mut Board, movs: & Vec<GameMove>) -> u64 {
 
         move_number += perft(depth - 1, board, &mov_list);
 
-        // for m in mov_list {
-        //     print!("{}=> ", m);
-        // }
-        // print!("\n");
         board.undo_move();
     }
     move_number
@@ -71,6 +68,13 @@ fn perft(depth: u8, board: &mut Board, movs: & Vec<GameMove>) -> u64 {
 #[test]
 #[ignore]
 fn perft_test() {
+
+    let res = SystemTime::now().duration_since(UNIX_EPOCH);
+    let start_time;
+    match res {
+        Ok(n) => start_time = n.as_millis(),
+        _ => panic!("Did not get valid time"),
+    }
     let positions: Vec<PositionCounts> = read_all::<PositionCounts>("tests/perftsuite.txt")
         .iter()
         .filter_map(|x| x.clone().ok())
@@ -83,6 +87,7 @@ fn perft_test() {
         for j in 0..7 {
             let move_number = perft((j + 1) as u8, &mut board, &Vec::new());
             assert_eq!(move_number, positions[i].nums[j], "Did not find ocrrect number of moves for position {} at depth {}", i, j);
+            println!("Evaluated {} positions at depth {} taking {} ms", move_number, j, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis());
         }
     }
 }

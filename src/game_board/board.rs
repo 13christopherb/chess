@@ -27,7 +27,7 @@ pub struct PastMove {
     castle_perm: u8,
     //Castle permission
     fifty_move: u64,
-    pos_key: u64,
+    pub pos_key: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -35,16 +35,16 @@ pub struct Board {
     pub pieces: [u8; 120],
     pub bitboards: [BitBoard; 3],
     pub king_sq: [u8; 2],
-    fifty_move: u64,
+    pub fifty_move: u64,
     pub side: u8,
     pub en_passant: u8,
 
-    ply: u64,
-    history_ply: u64,
+    pub ply: u64,
+    pub history_ply: u64,
 
     pub castle_perm: u8, //Castle permission
 
-    pos_key: u64,
+    pub pos_key: u64,
 
     pub num_pieces: [u8; 13],
     pub num_big_pieces: [u8; 2],
@@ -52,7 +52,7 @@ pub struct Board {
     pub num_minor_pieces: [u8; 2],
     pub material: [u32; 2],
 
-    history: Vec<PastMove>,
+    pub(crate) history: Vec<PastMove>,
 
     pub sq120_to_sq64: [u8; 120],
     // Array to convert 10x12 square numbers to 8x8 square numbers
