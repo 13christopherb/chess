@@ -63,7 +63,7 @@ pub struct Board {
 
     hasher: BoardHasher,
 
-    pvtable: PVTable
+    pub pvtable: PVTable
 }
 
 impl Board {
