@@ -2,6 +2,7 @@ use std::mem;
 use std::mem::MaybeUninit;
 use crate::game_board::board::Board;
 use crate::moves::gamemove::GameMove;
+use crate::moves::movegen::move_exists;
 
 #[derive(Debug, Clone)]
 pub struct PVEntry {
@@ -40,6 +41,28 @@ impl PVTable {
         }
         None
     }
+
+    #[inline]
+    pub fn get_line(&self, depth:u8, pos: &mut Board) -> u8 {
+        let mut mov = self.probe(pos);
+        let mut count = 0;
+        while let Some(m) = mov {
+            if count >= depth { break; }
+            if move_exists(pos, m) {
+                pos.make_move(m);
+                pos.pvarray[count as usize] = m;
+                count += 1;
+            } else {
+                break;
+            }
+            mov = self.probe(pos);
+        }
+
+        while pos.ply > 0 {
+            pos.undo_move();
+        }
+        count
+    }
 }
 
 #[cfg(test)]
@@ -77,5 +100,16 @@ mod test {
         table.ptable[200000 % length].poskey = board.pos_key;
         let retrieved_move = table.probe(&board).unwrap();
         assert_eq!(retrieved_move.move_int, mov.move_int);
+    }
+
+    #[test]
+    fn test_get_line() {
+        //TODO: Actually finish this test
+        let mut board = Board::new();
+        unsafe{board.parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")};
+        board.update_material_list();
+
+        let mut table = PVTable::new();
+        assert_eq!(0, table.get_line(1,&mut board));
     }
 }

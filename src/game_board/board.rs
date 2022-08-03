@@ -63,7 +63,8 @@ pub struct Board {
 
     hasher: BoardHasher,
 
-    pub pvtable: PVTable
+    pub pvtable: PVTable,
+    pub pvarray: [GameMove; 64]
 }
 
 impl Board {
@@ -103,6 +104,7 @@ impl Board {
             piece_list: [[0; 18]; 13],
             hasher: BoardHasher::new(),
             pvtable: PVTable::new(),
+            pvarray: [GameMove::new(0,0,0,0,0); 64]
         }
     }
 

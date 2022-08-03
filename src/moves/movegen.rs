@@ -365,10 +365,23 @@ fn generate_castle_move(pos: &Board, side: u8, sqs: &[u8], from: u8, to: u8, lis
     }
 }
 
+/// Generates all moves possible for the given position and adds them to the given list.
+/// Note that this function does not ensure that generated moves won't result in the king
+/// being in check
+///
+/// # Arguments
+///
+/// * `pos`:
+/// * `list`:
+///
+/// returns: ()
+///
+/// # Examples
+///
+/// ```
+///
+/// ```
 pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
-    //TODO: Fix en passant
-    //assert!(check_board(pos));
-
     if pos.side == WHITE {
         generate_wp_moves(pos, list); // Pawns have a lot of special rules for movement, best to write specific functions
 
@@ -400,6 +413,21 @@ pub fn generate_all_moves(pos: &Board, list: &mut Vec<GameMove>) {
         generate_sliding_moves(pos, list, BLACK);
         generate_nonsliding_moves(pos, list, BLACK);
     }
+}
+
+#[inline]
+pub fn move_exists(pos: &mut Board, mov: GameMove) -> bool {
+    let mut mov_list: Vec<GameMove> = vec![];
+    generate_all_moves(pos, &mut mov_list);
+    for m in mov_list {
+        if pos.make_move(m) {
+            pos.undo_move();
+            if m == mov {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 
@@ -815,6 +843,24 @@ mod test {
         for mov in move_list {
             assert!(!mov.is_castle_move(), "Incorrectly found a white castling move when there is no rook: {}", mov);
         }
+    }
+
+    #[test]
+    fn test_move_exists() {
+        let mut board = Board::new();
+        unsafe {board.parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");}
+        board.update_material_list();
+        let mov = GameMove::new(fr2sq(FILE_E, RANK_2), fr2sq(FILE_E, RANK_3), 0, 0, 0);
+        assert!(move_exists(&mut board, mov));
+    }
+
+    #[test]
+    fn test_move__does_not_exist() {
+        let mut board = Board::new();
+        unsafe {board.parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");}
+        board.update_material_list();
+        let mov = GameMove::new(fr2sq(FILE_E, RANK_2), fr2sq(FILE_E, RANK_4), 0, 0, 0); // Missing pawn start flag
+        assert!(!move_exists(&mut board, mov));
     }
 }
 
