@@ -64,7 +64,9 @@ pub struct Board {
     hasher: BoardHasher,
 
     pub pvtable: PVTable,
-    pub pvarray: [GameMove; 64]
+    pub pvarray: [GameMove; 64],
+    pub search_history:[[u64; 64]; 13],
+    pub search_killers:[[u64; 64]; 2] // Good moves that ended alpha beta search previously
 }
 
 impl Board {

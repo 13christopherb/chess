@@ -1,5 +1,21 @@
 use crate::game_board::board::Board;
 
+#[derive(Debug, Clone)]
+pub struct SearhInfo {
+    pub start_time: u64,
+    pub end_time: u64,
+    pub depth: u64,
+    pub depthset: u64,
+    pub timeset: u64,
+    pub moves_to_go: u64,
+    pub infinite: bool,
+
+    pub nodes: u64,
+
+    pub quit: bool,
+    pub stopped: bool,
+}
+
 /// Checks if the current position is a repetition of a previous position
 ///
 /// # Arguments
