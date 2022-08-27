@@ -9,7 +9,6 @@ use crate::moves::validate::is_sq_on_board;
 use crate::utils::hashkeys::BoardHasher;
 use crate::utils::piece_utils::{piece_is_king, piece_is_pawn};
 use crate::utils::square_utils::fr2sq;
-//Piece list isn't getting updated right?
 
 /// Code used for storing the general state of the board
 
@@ -106,7 +105,9 @@ impl Board {
             piece_list: [[0; 18]; 13],
             hasher: BoardHasher::new(),
             pvtable: PVTable::new(),
-            pvarray: [GameMove::new(0,0,0,0,0); 64]
+            pvarray: [GameMove::new(0,0,0,0,0); 64],
+            search_history: [[0; 64]; 13],
+            search_killers: [[0; 64]; 2]
         }
     }
 
